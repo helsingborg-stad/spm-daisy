@@ -46,20 +46,20 @@ Each library develiers a specific functionality and each of them has documentati
 
 | Package | Description |
 |:--|:--|                                                   
-| [AppSettings](AppSettings/README.md)                                             | Digital assitant interface
-| [Assistant](Assistant/README.md)                                                 | Audio service management
-| [AudioSwitchboard](AudioSwitchboard/README.md)                                   | Configuration with MDM App Config support
-| [AutomatedFetcher](AutomatedFetcher/README.md)                                   | Reccuring fetches
-| [Dragoman](Dragoman/README.md)                                                   | String localization management
-| [FFTPublisher](FFTPublisher/README.md)                                           | Audio visualization
-| [Instagram](Instagram/README.md)                                                 | Instagram API inter
-| [Meals](Meals/README.md)                                                         | For fetching meals
-| [PublicCalendar](PublicCalendar/README.md)                                       | Swedish public calendar
-| [Shout](Shout/README.md)                                                         | Debug logging
-| [STT](STT/README.md)                                                             | Speech to text
-| [TTS](TTS/README.md)                                                             | Text to speech
-| [TextTranslator](TextTranslator/README.md)                                       | Text translation
-| [Weather](Weather/README.md)                                                     | Weather service interface
+| [AppSettings](AppSettings)                                             | Digital assitant interface
+| [Assistant](Assistant)                                                 | Audio service management
+| [AudioSwitchboard](AudioSwitchboard)                                   | Configuration with MDM App Config support
+| [AutomatedFetcher](AutomatedFetcher)                                   | Reccuring fetches
+| [Dragoman](Dragoman)                                                   | String localization management
+| [FFTPublisher](FFTPublisher)                                           | Audio visualization
+| [Instagram](Instagram)                                                 | Instagram API inter
+| [Meals](Meals)                                                         | For fetching meals
+| [PublicCalendar](PublicCalendar)                                       | Swedish public calendar
+| [Shout](Shout)                                                         | Debug logging
+| [STT](STT)                                                             | Speech to text
+| [TTS](TTS)                                                             | Text to speech
+| [TextTranslator](TextTranslator)                                       | Text translation
+| [Weather](Weather)                                                     | Weather service interface
 
 ## More packages
 There are other packages available to use in your apps, like the [MSCognitiveServices](https://github.com/helsingborg-stad/spm-ms-cognitive-services) that implements the TextTransaltor, STT and TTS protocols for easy use within your app.
