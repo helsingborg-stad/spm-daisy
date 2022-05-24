@@ -119,14 +119,13 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
     @Published public private(set) var translationBundle:Bundle
     /// Currently available locales for all services (TTS,STT,TextTranslation)
     @Published public private(set) var availableLocales:Set<Locale>? = nil
-    
+
     /// Used to keep track of updated locales
     private var textTranslationServiceSubscriber:AnyCancellable? = nil
     /// Currently available locales publisher subject
-    private var availableLocalesSubject = CurrentValueSubject<Set<Locale>?,Never>(nil)
-    /// Currently available locales publisher
-    public var availableLocalesPublisher: AnyPublisher<Set<Locale>?,Never> {
-        return availableLocalesSubject.eraseToAnyPublisher()
+    private var languageUpdatesAvailableSubject = PassthroughSubject<Void,Never>()
+    public var languageUpdatesAvailablePublisher:AnyPublisher<Void,Never> {
+        languageUpdatesAvailableSubject.eraseToAnyPublisher()
     }
     /// Exposes a publisher for the $isSpeaking property
     public var isSpeakingPublisher:AnyPublisher<Bool,Never> {
@@ -145,7 +144,7 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
     public init(settings:Settings) {
         self.supportedLocales = settings.supportedLocales
         self.mainLocale = settings.mainLocale
-        self.dragoman = Dragoman(translationService:settings.translator, language:settings.mainLocale.languageCode ?? "en", supportedLanguages: settings.supportedLocales.compactMap({$0.languageCode}))
+        self.dragoman = Dragoman(translationService:settings.translator, language:settings.mainLocale.languageCode ?? "en")
         self.stt = STT(service: settings.sttService)
         self.tts = TTS(settings.ttsServices)
         self.translationBundle = dragoman.bundle
@@ -325,34 +324,71 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
         }
         return arr
     }
-    /// Updates the currently available locales
+    /// Notifies listeners of locale updates
     private func updateAvailableLocales(){
-        var set = Set<Locale>()
-        if let l = stt.availableLocales {
-            set = set.union(l)
+        languageUpdatesAvailableSubject.send()
+    }
+    /// Get currently available locales. For each service included the set will return nil of one of the services returns nil
+    /// - Parameters:
+    ///   - includeTTSService: indicates whether or not to include TTS available locales
+    ///   - includeSTTService: indicates whether or not to include STT available locales
+    ///   - includeTextTranslation: indicates whether or not to include TextTranslationService available locales
+    /// - Returns: a set of locales
+    public func getAvailableLangaugeCodes(includeTTSService:Bool = true, includeSTTService:Bool = true, includeTextTranslation:Bool = true) -> Set<String>? {
+        var set = Set<String>()
+        var ttsSet:Set<String>?
+        var sttSet:Set<String>?
+        var textSet:Set<String>?
+
+        if includeTTSService, let locales = tts.availableLocales {
+            var tempSet = Set<String>()
+            for l in locales {
+                guard let code = l.languageCode else {
+                    continue
+                }
+                tempSet.insert(code)
+            }
+            ttsSet = tempSet
         }
-        if let l = tts.availableLocales {
-            set = set.union(l)
+        if includeSTTService, let locales = stt.availableLocales {
+            var tempSet = Set<String>()
+            for l in locales {
+                guard let code = l.languageCode else {
+                    continue
+                }
+                tempSet.insert(code)
+            }
+            sttSet = tempSet
         }
-        if let l = dragoman.availableLocales {
-            set = set.union(l)
+        if includeTextTranslation, let locales = dragoman.availableLocales {
+            var tempSet = Set<String>()
+            for l in locales {
+                guard let code = l.languageCode else {
+                    continue
+                }
+                tempSet.insert(code)
+            }
+            textSet = tempSet
         }
-        if let l = stt.availableLocales {
-            set = set.intersection(l)
+        if let s = ttsSet {
+            set = set.union(s)
         }
-        if let l = tts.availableLocales {
-            set = set.intersection(l)
+        if let s = sttSet {
+            set = set.union(s)
         }
-        if let l = dragoman.availableLocales {
-            set = set.intersection(l)
+        if let s = textSet {
+            set = set.union(s)
         }
-        if set.isEmpty {
-            availableLocales = nil
-            availableLocalesSubject.send(nil)
-        } else {
-            availableLocales = set
-            availableLocalesSubject.send(set)
+        if let s = ttsSet {
+            set = set.intersection(s)
         }
+        if let s = sttSet {
+            set = set.intersection(s)
+        }
+        if let s = textSet {
+            set = set.intersection(s)
+        }
+        return set
     }
     
     /// Cancells all currently running speech services, ie TTS or STT.
