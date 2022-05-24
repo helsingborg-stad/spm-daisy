@@ -268,7 +268,7 @@ public class STT : ObservableObject {
         }.store(in: &cancellables)
     }
     /// Updates the currently available locales using a set ot locales
-    func updateAvailableLocales(_ locales:Set<Locale>?) {
+    private func updateAvailableLocales(_ locales:Set<Locale>?) {
         if let locales = locales {
             if availableLocales == nil {
                 availableLocales = .init(locales)
