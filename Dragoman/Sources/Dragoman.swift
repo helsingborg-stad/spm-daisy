@@ -36,11 +36,14 @@ public enum DragomanError : Error {
 }
 /// Dragoman is a localization and translation manager that uses a local device bundle to store .strings -files
 public class Dragoman: ObservableObject {
+    /// Supported language keys, contains all system languages.
+    /// - Warning: Changing this proeprty after starting dragoman might lead to unexpected  issues. If you remove languages from the list you will lose any data translated in those languages
+    public static var supportedLanguageKeys:[LanguageKey] = Locale.availableIdentifiers
     /// Indicates whether or not texts are being translated
     private var isTranslating:Bool = false
     /// Used to queue translation service calls and mitigate possible concurrency issues
     private var translationQueue = [QueueItem]()
-    /// Used to identify a lanugage. Can be any string you desire but should be Apple Locale.languageCode compatible
+    /// Used to identify a language. Can be any string you desire but should be Apple Locale.languageCode compatible
     public typealias LanguageKey = String
     /// Used to decribe a value for a key
     public typealias Value = String
@@ -67,8 +70,6 @@ public class Dragoman: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     /// Triggeres when changes occurs
     private let changedSubject = PassthroughSubject<Void, Never>()
-    /// Triggeres when a failure occurs
-    public private(set) var supportedLanguages = [LanguageKey]()
     /// Currently available locales publisher subject
     private var availableLocalesSubject = CurrentValueSubject<Set<Locale>?,Never>(nil)
     /// Currently available locales publisher
@@ -97,14 +98,12 @@ public class Dragoman: ObservableObject {
     /// Initializes a new
     /// - Parameters:
     ///   - translationService: transaltion service to use when calling  translate(texts:from:to:)
-    ///   - language: currently selected lanugage
-    ///   - supportedLanguages: all supported languages
-    public init(translationService: TextTranslationService? = nil, language:LanguageKey, supportedLanguages:[LanguageKey]) {
+    ///   - language: currently selected language
+    public init(translationService: TextTranslationService? = nil, language:LanguageKey) {
         self.language = language
-        self.supportedLanguages = supportedLanguages
         if let name = UserDefaults.standard.string(forKey: defaultKeyMame), let b = Self.getBundle(for: name) {
             baseBundle = b
-        } else if let bundle = try? Self.createBundle(tableName: tableName, languages: supportedLanguages) {
+        } else if let bundle = try? Self.createBundle(tableName: tableName, languages: Dragoman.supportedLanguageKeys) {
             baseBundle = bundle
         } else {
             baseBundle = Bundle.main
@@ -134,7 +133,7 @@ public class Dragoman: ObservableObject {
     /// - Parameter name: the bundle name, must include .bundle
     /// - Returns: a bundle if any
     static func getBundle(for name:String) -> Bundle? {
-        let documents = URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!)
+        let documents = URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.libraryDirectory, .userDomainMask, true).first!)
         let url = documents.appendingPathComponent(name, isDirectory: true)
         return Bundle(path: url.path)
     }
@@ -144,7 +143,7 @@ public class Dragoman: ObservableObject {
     ///   - languages: language specific .lproj-folders to create
     /// - Returns: a new bundle
     static func createBundle(tableName:String, languages:[LanguageKey]) throws -> Bundle {
-        let documents = URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first!)
+        let documents = URL(fileURLWithPath: NSSearchPathForDirectoriesInDomains(.libraryDirectory, .userDomainMask, true).first!)
         let bundlePath = documents.appendingPathComponent(UUID().uuidString + ".bundle", isDirectory: true)
         try Self.createFoldersAndFiles(bundlePath: bundlePath, tableName: tableName, languages: languages)
         return Bundle(url: bundlePath)!
@@ -216,7 +215,7 @@ public class Dragoman: ObservableObject {
     /// Removes all strings in all supported languages related to the specified keys
     /// - Parameter keys: keys to strings that should be removed
     public func remove(keys:[String]) throws {
-        var table = translations(in: supportedLanguages)
+        var table = getTranslations()
         table.remove(strings: keys)
         try write(table)
     }
@@ -225,13 +224,12 @@ public class Dragoman: ObservableObject {
     /// - Parameters:
     ///   - texts: the texts to translate, also used as keys to it's translated values
     ///   - from: original language
-    ///   - to: languages to translate into, if nil the supportedLanguages will be used
+    ///   - to: languages to translate into
     /// - Returns: completion publisher
-    public func translate(_ texts: [String], from: LanguageKey, to: [LanguageKey]? = nil) -> AnyPublisher<Void,Error> {
+    public func translate(_ texts: [String], from: LanguageKey, to: [LanguageKey]) -> AnyPublisher<Void,Error> {
         if disabled {
             return Fail(error: DragomanError.disabled).eraseToAnyPublisher()
         }
-        let to = to ?? supportedLanguages
         let i = QueueItem(texts, from: from, to: to)
         self.translationQueue.append(i)
         DispatchQueue.main.async { [weak self] in
@@ -259,7 +257,7 @@ public class Dragoman: ObservableObject {
             runQueue()
             return
         }
-        let table = translations(in: Array(i.to))
+        let table = getTranslations(in: Array(i.to))
         var p:AnyCancellable?
         p = translationService.translate(i.texts, from: i.from, to: Array(i.to), storeIn: table).receive(on: DispatchQueue.main).sink(receiveCompletion: { [weak self] compl in
             switch compl {
@@ -274,7 +272,7 @@ public class Dragoman: ObservableObject {
                 self?.runQueue()
                 return
             }
-            var curr = this.translations(in: this.supportedLanguages)
+            var curr = this.getTranslations()
             curr.merge(with: table)
             do {
                 try this.write(table)
@@ -293,9 +291,8 @@ public class Dragoman: ObservableObject {
         }
     }
     /// Reads all translations from disk
-    /// - Parameter languages: langauges to include
     /// - Returns: a transaltion table contining all translations and it's keys
-    public func translations(in languages: [LanguageKey]) -> TextTranslationTable {
+    public func getTranslations(in languages: [LanguageKey] = Dragoman.supportedLanguageKeys) -> TextTranslationTable {
         var t = TextTranslationTable()
         for language in languages {
             if let url = baseBundle.url(forResource: tableName, withExtension: "strings", subdirectory: nil, localization: language), let stringsDict = NSDictionary(contentsOf: url) as? [String: String] {
@@ -309,10 +306,10 @@ public class Dragoman: ObservableObject {
     /// Checks if the text is translated in provided languages
     /// - Parameters:
     ///   - text: the text
-    ///   - languages: languages to use, if nil supportedLanguages will be used as default value
+    ///   - languages: languages to use
     /// - Returns: true if translations found, false if not
-    public func isTranslated(_ text:String, in languages:[LanguageKey]? = nil) -> Bool {
-        let lang = languages ?? supportedLanguages
+    public func isTranslated(_ text:String, in languages:[LanguageKey]) -> Bool {
+        let lang = languages
         let error = "## error no translation \(UUID().uuidString) ##"
         for l in lang {
             let str = Self.appBundle(for: language).localizedString(forKey: text, value: error, table: nil)
@@ -360,7 +357,7 @@ public class Dragoman: ObservableObject {
     /// - Parameter value: a default value to return in case no localized value can be found
     /// - Returns: returns a localized string. if no string is found and the `value` is set to a string, the `value` will be returned. If `value` is nil the `key` will be returned
     public func string(forKey key:String, with locale:Locale, value:String? = nil) -> String {
-        guard let languageCode = locale.languageCode, supportedLanguages.contains(languageCode) else {
+        guard let languageCode = locale.languageCode else {
             return key
         }
         return string(forKey: key, in: languageCode,value: value)
@@ -372,13 +369,9 @@ public class Dragoman: ObservableObject {
             return
         }
         let old = baseBundle
-        let new = try Self.createBundle(tableName: tableName, languages: supportedLanguages)
+        let new = try Self.createBundle(tableName: tableName, languages: Dragoman.supportedLanguageKeys)
         for language in translations.db {
             let lang = language.key
-            if !self.supportedLanguages.contains(lang) {
-                logger.warning("language \(lang) not supported, ignoring")
-                continue
-            }
             let langPath = new.bundleURL.appendingPathComponent("\(lang).lproj", isDirectory: true)
             let sentences = language.value
             let res = sentences.reduce("", { $0 + "\"\(escape($1.key))\" = \"\(escape($1.value))\";\n" })
