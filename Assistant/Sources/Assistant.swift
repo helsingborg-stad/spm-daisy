@@ -69,7 +69,7 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
             self.voiceCommands = voiceCommands ?? Keys.createLocalizedDatabasePlist(languages: supportedLocales)
         }
     }
-
+    
     /// Publishes strings to the `NLParser`
     private let sttStringPublisher = PassthroughSubject<String,Never>()
     /// Cancellable store
@@ -117,7 +117,17 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
     @Published public private(set) var currentlySpeaking:TTSUtterance? = nil
     /// The current dragoman translaton bundle based ont the selected language
     @Published public private(set) var translationBundle:Bundle
+    /// Currently available locales for all services (TTS,STT,TextTranslation)
+    @Published public private(set) var availableLocales:Set<Locale>? = nil
     
+    /// Used to keep track of updated locales
+    private var textTranslationServiceSubscriber:AnyCancellable? = nil
+    /// Currently available locales publisher subject
+    private var availableLocalesSubject = CurrentValueSubject<Set<Locale>?,Never>(nil)
+    /// Currently available locales publisher
+    public var availableLocalesPublisher: AnyPublisher<Set<Locale>?,Never> {
+        return availableLocalesSubject.eraseToAnyPublisher()
+    }
     /// Exposes a publisher for the $isSpeaking property
     public var isSpeakingPublisher:AnyPublisher<Bool,Never> {
         $isSpeaking.eraseToAnyPublisher()
@@ -165,6 +175,19 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
         
         tts.$isSpeaking.sink { [weak self] b in
             self?.isSpeaking = b
+        }.store(in: &cancellables)
+        
+        
+        stt.availableLocalesPublisher.sink { [weak self] _ in
+            self?.updateAvailableLocales()
+        }.store(in: &cancellables)
+        
+        dragoman.availableLocalesPublisher.receive(on: DispatchQueue.main).sink { [weak self] _ in
+            self?.updateAvailableLocales()
+        }.store(in: &cancellables)
+        
+        tts.availableLocalesPublisher.sink { [weak self] _ in
+            self?.updateAvailableLocales()
         }.store(in: &cancellables)
         
         stt.locale = settings.mainLocale
@@ -302,6 +325,35 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
         }
         return arr
     }
+    /// Updates the currently available locales
+    private func updateAvailableLocales(){
+        var set = Set<Locale>()
+        if let l = stt.availableLocales {
+            set = set.union(l)
+        }
+        if let l = tts.availableLocales {
+            set = set.union(l)
+        }
+        if let l = dragoman.availableLocales {
+            set = set.union(l)
+        }
+        if let l = stt.availableLocales {
+            set = set.intersection(l)
+        }
+        if let l = tts.availableLocales {
+            set = set.intersection(l)
+        }
+        if let l = dragoman.availableLocales {
+            set = set.intersection(l)
+        }
+        if set.isEmpty {
+            availableLocales = nil
+            availableLocalesSubject.send(nil)
+        } else {
+            availableLocales = set
+            availableLocalesSubject.send(set)
+        }
+    }
     
     /// Cancells all currently running speech services, ie TTS or STT.
     public func cancelSpeechServices() {
@@ -408,4 +460,5 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
                 .environment(\.locale, assistant.locale)
         }
     }
+
 }

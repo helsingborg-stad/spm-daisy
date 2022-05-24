@@ -17,7 +17,7 @@ class TestTextTranslator : TextTranslationService {
         return $availableLocales.eraseToAnyPublisher()
     }
     
-    @Published var availableLocales: Set<Locale>? = nil
+    @Published var availableLocales: Set<Locale>? = [Locale(identifier: "sv_SE")]
     var translationDict = [String:String]()
     init() {
         translationDict[firstTest] = firstTestTranslated
@@ -182,5 +182,19 @@ final class DragomanTests: XCTestCase {
             expectation.fulfill()
         }.store(in: &cancellables)
         wait(for: [expectation], timeout: 5)
+    }
+    func testLocaleSupport() {
+        let expectation = XCTestExpectation(description: "testLocaleSupport")
+        let dragoman = Dragoman(translationService: translator, language: "sv", supportedLanguages: ["sv","en"])
+        dragoman.availableLocalesPublisher.sink { locales in
+            guard let locales = locales else {
+                print("nothing?")
+                return
+            }
+            print(locales)
+            XCTAssert(locales.contains(Locale(identifier: "sv_SE")))
+            expectation.fulfill()
+        }.store(in: &cancellables)
+        wait(for: [expectation], timeout: 2)
     }
 }

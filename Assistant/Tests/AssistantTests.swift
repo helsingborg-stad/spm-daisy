@@ -29,7 +29,6 @@ class TestTextTranslator : TextTranslationService {
     var availableLocalesPublisher: AnyPublisher<Set<Locale>?, Never> {
         return $availableLocales.eraseToAnyPublisher()
     }
-    
     @Published var availableLocales: Set<Locale>? = nil
     var translationDict = [String:String]()
     init() {
@@ -87,8 +86,7 @@ class TestSTT : STTService {
     var availableLocalesPublisher: AnyPublisher<Set<Locale>?, Never> {
         $availableLocales.eraseToAnyPublisher()
     }
-    @Published var availableLocales: Set<Locale>? = [Locale(identifier: "en_US")]
-    
+    @Published var availableLocales: Set<Locale>? = [Locale(identifier: "en_US"),Locale(identifier: "sv_SE")]
     var locale: Locale = Locale(identifier: "en_US")
     var contextualStrings: [String] = []
     var mode: STTMode = .unspecified
@@ -146,6 +144,7 @@ var cancellabels = Set<AnyCancellable>()
 typealias TestParser = NLParser<VoiceCommands>
 typealias MyAssistant = Assistant<VoiceCommands>
 final class AssistantTests: XCTestCase {
+    var cancellables = Set<AnyCancellable>()
     func testNLParser() {
         let locale = Locale(identifier:"en_US")
         let db = createDB()
@@ -202,6 +201,30 @@ final class AssistantTests: XCTestCase {
             XCTAssert(shouldhit.contains(.instagram))
             expectation.fulfill()
         }
+        wait(for: [expectation], timeout: 5)
+    }
+    func testLocaleSupport() {
+        let expectation = XCTestExpectation(description: "testDragoman")
+        let sttService = TestSTT()
+
+        let assistant = MyAssistant(
+            settings: .init(
+                sttService: sttService,
+                ttsServices: AppleTTS(audioSwitchBoard: switchboard),
+                supportedLocales: [Locale(identifier: "en_US"),Locale(identifier: "sv_SE")],
+                translator: TestTextTranslator(),
+                voiceCommands: createDB()
+            )
+        )
+        assistant.availableLocalesPublisher.sink { locales in
+            guard let locales = locales else {
+                print("nothing?")
+                return
+            }
+            print(locales.map({ $0.identifier}))
+            XCTAssert(locales.contains(Locale(identifier: "en_US")))
+            expectation.fulfill()
+        }.store(in: &cancellables)
         wait(for: [expectation], timeout: 5)
     }
 }

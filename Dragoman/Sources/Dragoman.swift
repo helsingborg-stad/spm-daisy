@@ -58,14 +58,27 @@ public class Dragoman: ObservableObject {
     /// The name of the table where all strings are stored
     private let tableName: String = "Localizable"
     /// The translation service used to translate strings
-    public var translationService: TextTranslationService?
+    public var translationService: TextTranslationService? {
+        didSet {
+            updateTranslationServiceSubscriber()
+        }
+    }
     /// Cancellables storage
     private var cancellables = Set<AnyCancellable>()
     /// Triggeres when changes occurs
     private let changedSubject = PassthroughSubject<Void, Never>()
     /// Triggeres when a failure occurs
     public private(set) var supportedLanguages = [LanguageKey]()
-    
+    /// Currently available locales publisher subject
+    private var availableLocalesSubject = CurrentValueSubject<Set<Locale>?,Never>(nil)
+    /// Currently available locales publisher
+    public var availableLocalesPublisher: AnyPublisher<Set<Locale>?,Never> {
+        return availableLocalesSubject.eraseToAnyPublisher()
+    }
+    /// Available locales publsiher subscriber
+    private var availableLocalesCancellable:AnyCancellable?
+    /// Currently available locales
+    public private(set) var availableLocales:Set<Locale>? = nil
     /// Indicates whether or not the dragoman translation service and file writes are disabled
     @Published public var disabled: Bool = false
     /// The bundle of the currently selected language
@@ -101,6 +114,21 @@ public class Dragoman: ObservableObject {
         bundle = Self.languageBundle(bundle: baseBundle, for: language)
         self.translationService = translationService
         self.changed = changedSubject.eraseToAnyPublisher()
+        self.updateTranslationServiceSubscriber()
+    }
+    /// Updates the currently available locales using the current service
+    private func updateTranslationServiceSubscriber() {
+        guard let service = translationService else {
+            availableLocalesCancellable = nil
+            availableLocales = nil
+            availableLocalesSubject.send(nil)
+            return
+        }
+        availableLocales = service.availableLocales
+        availableLocalesCancellable = service.availableLocalesPublisher.sink { [weak self] locales in
+            self?.availableLocales = locales
+            self?.availableLocalesSubject.send(locales)
+        }
     }
     /// Load bundle from document directory (if it exists)
     /// - Parameter name: the bundle name, must include .bundle
