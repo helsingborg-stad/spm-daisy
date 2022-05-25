@@ -317,12 +317,22 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
         for string in strings {
             arr.append(self.utterance(for: string))
         }
-        if interrupt {
-            self.interrupt(using: arr)
-        } else {
-            self.queue(utterances: arr)
-        }
+        self.speak(arr,interrupt: interrupt)
         return arr
+    }
+    public func speak(_ utterances:[TTSUtterance], interrupt:Bool) {
+        if interrupt {
+            self.interrupt(using: utterances)
+        } else {
+            self.queue(utterances: utterances)
+        }
+    }
+    public func speak(_ utterances:TTSUtterance..., interrupt:Bool) {
+        if interrupt {
+            self.interrupt(using: utterances)
+        } else {
+            self.queue(utterances: utterances)
+        }
     }
     /// Notifies listeners of locale updates
     private func updateAvailableLocales(){
