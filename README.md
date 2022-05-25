@@ -80,8 +80,6 @@ Any contributions you make are **greatly appreciated**.
 ## License
 Distributed under the [MIT License][license-url].
 
-
-
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 [contributors-shield]: https://img.shields.io/github/contributors/helsingborg-stad/spm-daisy-collection.svg?style=flat-square
@@ -95,20 +93,3 @@ Distributed under the [MIT License][license-url].
 [license-shield]: https://img.shields.io/github/license/helsingborg-stad/spm-daisy-collection.svg?style=flat-square
 [license-url]: https://raw.githubusercontent.com/helsingborg-stad/spm-daisy-collection/main/LICENSE
 [platform-shield]: https://img.shields.io/badge/platform-iOS-blue.svg?style=flat-square
-
-## Libraries
-- [AppSettings](Documentation/AppSettings.md)
-- [Assistant](Documentation/Assistant.md)
-- [AudioSwitchboard](Documentation/AudioSwitchboard.md)
-- [AutomatedFetcher](Documentation/AutomatedFetcher.md)
-- [ClockUI](Documentation/ClockUI.md)
-- [Dragoman](Documentation/Dragoman.md)
-- [FFTPublisher](Documentation/FFTPublisher.md)
-- [Instagram](Documentation/Instagram.md)
-- [Meals](Documentation/Meals.md)
-- [PublicCalendar](Documentation/PublicCalendar.md)
-- [ClockUI](Documentation/ClockUI.md)
-- [Shout](Documentation/Shout.md)
-- [TTS](Documentation/TTS.md)
-- [TextTranslator](Documentation/TextTranslator.md)
-- [Weather](Documentation/Weather.md)
