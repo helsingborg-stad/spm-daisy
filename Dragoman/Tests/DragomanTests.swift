@@ -109,6 +109,7 @@ final class DragomanTests: XCTestCase {
         try? dragoman.clean()
         dragoman.add(bundle: Bundle.module)
         XCTAssertTrue(dragoman.string(forKey: "this_is_a_test", in:"en-US") == "en-US translation")
+        XCTAssertTrue(dragoman.string(forKey: "this_is_a_test", in:"en_US") == "en-US translation")
         XCTAssertTrue(dragoman.string(forKey: "this_is_a_test", in:"en") == "en translation")
         
         //wait(for: [expectation], timeout: 5)

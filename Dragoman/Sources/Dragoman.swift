@@ -186,8 +186,8 @@ public class Dragoman: ObservableObject {
         if let path = bundle.path(forResource: lang, ofType: "lproj"), let bun = Bundle(path: path) {
             return bun
         }
-        if language.contains("-"), let lang = language.split(separator: "-").first {
-            if let path = bundle.path(forResource: String(lang), ofType: "lproj"), let bun = Bundle(path: path) {
+        if lang.contains("-"), let l = lang.split(separator: "-").first {
+            if let path = bundle.path(forResource: String(l), ofType: "lproj"), let bun = Bundle(path: path) {
                 return bun
             }
         }
