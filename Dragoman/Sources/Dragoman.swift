@@ -399,8 +399,8 @@ public class Dragoman: ObservableObject {
         if let b = Self.bundleByLanguageCode(bundle: baseBundle, for: language) {
             languageBundles.append(b)
         }
-        for b in customBundles {
-            guard let b = Self.bundleByLanguageCode(bundle: b, for: language) else {
+        for bun in customBundles {
+            guard let b = Self.bundleByLanguageCode(bundle: bun, for: language) else {
                 continue
             }
             languageBundles.append(b)
