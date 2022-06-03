@@ -93,11 +93,7 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
     /// Currently selected locale that changes language for the STT, NLParser and dragoman
     @Published public var locale:Locale {
         didSet {
-            if let language = locale.languageCode {
-                dragoman.language = language
-            } else {
-                debugPrint("unable to set dragoman language from \(locale)")
-            }
+            dragoman.language = locale.identifier
             stt.locale = locale
             commandBridge.locale = locale
         }
@@ -201,7 +197,7 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
     ///   - value: an optional default value used if the key is missing a localized value
     /// - Returns: the localized string
     public func string(forKey key:String, in locale:Locale? = nil, value:String? = nil) -> String {
-        guard let languageKey = locale?.languageCode else {
+        guard let languageKey = locale?.identifier else {
             return dragoman.string(forKey: key, value: value)
         }
         return dragoman.string(forKey: key, in: languageKey, value: value)
