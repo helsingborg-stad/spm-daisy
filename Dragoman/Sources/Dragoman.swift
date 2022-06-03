@@ -346,11 +346,11 @@ public class Dragoman: ObservableObject {
     }
     /// Get string in the provided locale. This method will first check if the translation is available in the appBundle
     /// - Parameter key: a key that corrensponds with a locaized value
-    /// - Parameter locale: the locale in which to return the value (uses `Locale.identifier`)
+    /// - Parameter locale: the locale in which to return the value (uses `Locale.languageCode` or `Locale.identifier` )
     /// - Parameter value: a default value to return in case no localized value can be found
     /// - Returns: returns a localized string. if no string is found and the `value` is set to a string, the `value` will be returned. If `value` is nil the `key` will be returned
     public func string(forKey key:String, with locale:Locale, value:String? = nil) -> String {
-        return getString(forKey: key, in: locale.identifier, value: value)
+        return getString(forKey: key, in: locale.languageCode ?? locale.identifier, value: value)
     }
     /// Write a table to disk
     /// - Parameter translations: the transaltion table to be stored
