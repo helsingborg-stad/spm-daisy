@@ -82,7 +82,7 @@ final class DragomanTests: XCTestCase {
                 XCTFail(error.localizedDescription)
             }
         } receiveValue: {
-            XCTAssert(dragoman.string(forKey: firstTest, in: "en") == firstTestTranslated)
+            XCTAssert(dragoman.string(forKey: firstTest, in: "en-US") == firstTestTranslated)
             dragoman.language = "en"
             dragoman.translate([secondTest], from: "sv", to: ["en"]).sink { compl in
                 if case let .failure(error) = compl {
@@ -102,6 +102,16 @@ final class DragomanTests: XCTestCase {
             }.store(in: &cancellables)
         }.store(in: &cancellables)
         wait(for: [expectation], timeout: 10)
+    }
+    func testLanguageIdentifier() {
+        //let expectation = XCTestExpectation(description: "testDragoman")
+        let dragoman = Dragoman(translationService: translator, language: "sv")
+        try? dragoman.clean()
+        dragoman.add(bundle: Bundle.module)
+        XCTAssertTrue(dragoman.string(forKey: "this_is_a_test", in:"en-US") == "en-US translation")
+        XCTAssertTrue(dragoman.string(forKey: "this_is_a_test", in:"en") == "en translation")
+        
+        //wait(for: [expectation], timeout: 5)
     }
     func testTranslationQueue() {
         let expectation = XCTestExpectation(description: "testDragoman")
@@ -177,7 +187,8 @@ final class DragomanTests: XCTestCase {
                 XCTFail(error.localizedDescription)
             }
         } receiveValue: {
-            XCTAssertTrue(dragoman.isTranslated(firstTest, in: ["en"]))
+            XCTAssertFalse(dragoman.isTranslated(firstTest, in: ["en-US"],exactMatch: true))
+            XCTAssertTrue(dragoman.isTranslated(firstTest, in: ["en-US"],exactMatch: false))
             XCTAssertFalse(dragoman.isTranslated(secondTest, in: ["en"]))
             XCTAssertFalse(dragoman.isTranslated(firstTest, in: ["pt"]))
             XCTAssertFalse(dragoman.isTranslated(firstTest, in: ["pt","en"]))

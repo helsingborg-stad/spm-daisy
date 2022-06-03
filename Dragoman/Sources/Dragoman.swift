@@ -171,13 +171,22 @@ public class Dragoman: ObservableObject {
         }
     }
     /// Loads the a language bundle (LANG.lproj) from a bundle if it exits
-    /// - Parameter language: langauge bundle to load
+    /// - Parameter bundle: the bundle
+    /// - Parameter language: the language
+    /// - Parameter exactMatch: whether or not to match exaclty on the languageKey, for example, if `en-US` does not exists, use `en`
     /// - Returns: a language specific bundle or nil
-    static private func bundleByLanguageCode(bundle:Bundle, for language:LanguageKey) -> Bundle? {
+    static private func bundleByLanguageCode(bundle:Bundle, for language:LanguageKey, exactMatch:Bool = false) -> Bundle? {
         if let path = bundle.path(forResource: language, ofType: "lproj"), let bun = Bundle(path: path) {
             return bun
         }
-        if language.contains("_"), let lang = language.split(separator: "_").first {
+        if exactMatch {
+            return nil
+        }
+        let lang = language.replacingOccurrences(of: "_", with: "-")
+        if let path = bundle.path(forResource: lang, ofType: "lproj"), let bun = Bundle(path: path) {
+            return bun
+        }
+        if language.contains("-"), let lang = language.split(separator: "-").first {
             if let path = bundle.path(forResource: String(lang), ofType: "lproj"), let bun = Bundle(path: path) {
                 return bun
             }
@@ -305,10 +314,11 @@ public class Dragoman: ObservableObject {
     /// - Parameter key: a key that corrensponds with a locaized value
     /// - Parameter language: the language in which to return the value
     /// - Parameter value: a default value to return in case no localized value can be found
+    /// - Parameter exactMatch: whether or not to match exaclty on the languageKey, for example, if `en-US` does not exists, use `en`
     /// - Returns: returns a localized string. if no string is found and the `value` is set to a string, the `value` will be returned. If `value` is nil the `key` will be returned
-    private func getString(forKey key:String, in language:LanguageKey, value:String? = nil) -> String {
+    private func getString(forKey key:String, in language:LanguageKey, value:String? = nil, exactMatch:Bool = false) -> String {
         let error = "## error no translation \(UUID().uuidString) ##"
-        for b in langaugeBundles(in: language) {
+        for b in languageBundles(in: language, exactMatch:exactMatch) {
             let str = b.localizedString(forKey: key, value: error, table: nil)
             if str == error {
                 continue
@@ -318,14 +328,14 @@ public class Dragoman: ObservableObject {
         return value ?? key
     }
     /// Checks if the text is translated in provided languages
-    /// - Parameters:
-    ///   - text: the text
-    ///   - languages: languages to use
+    /// - Parameter text: the text
+    /// - Parameter languages: languages to use
+    /// - Parameter exactMatch: whether or not to match exaclty on the languageKey, for example, if `en-US` does not exists, use `en`
     /// - Returns: true if translations found, false if not
-    public func isTranslated(_ text:String, in languages:[LanguageKey]) -> Bool {
+    public func isTranslated(_ text:String, in languages:[LanguageKey], exactMatch:Bool = false) -> Bool {
         let error = "## error no translation \(UUID().uuidString) ##"
         for l in languages {
-            if getString(forKey: text, in: l, value: error) == error {
+            if getString(forKey: text, in: l, value: error,exactMatch: exactMatch) == error {
                 return false
             }
         }
@@ -393,31 +403,28 @@ public class Dragoman: ObservableObject {
         } else {
             self.bundle = baseBundle
         }
-        self.languageBundles = langaugeBundles(in: language)
+        self.languageBundles = languageBundles(in: language)
         changedSubject.send()
     }
-    /// Get langauge bundles from custom all available bundles
+    /// Get language bundles from custom all available bundles
     /// - Parameter language: target language
+    /// - Parameter exactMatch: whether or not to match exaclty on the languageKey, for example, if `en-US` does not exists, use `en`
     /// - Returns: array of bundles
-    private func langaugeBundles(in language:LanguageKey) -> [Bundle]{
+    private func languageBundles(in language:LanguageKey, exactMatch:Bool = false) -> [Bundle]{
         var languageBundles = [Bundle]()
-        if let b = Self.bundleByLanguageCode(bundle: baseBundle, for: language) {
+        if let b = Self.bundleByLanguageCode(bundle: baseBundle, for: language, exactMatch: exactMatch) {
             languageBundles.append(b)
         } else {
             languageBundles.append(baseBundle)
         }
         for bun in customBundles {
-            if let b = Self.bundleByLanguageCode(bundle: bun, for: language) {
+            if let b = Self.bundleByLanguageCode(bundle: bun, for: language, exactMatch: exactMatch) {
                 languageBundles.append(b)
             } else {
                 languageBundles.append(bun)
             }
         }
-        if let b = Self.bundleByLanguageCode(bundle: Bundle.main, for: language) {
-            languageBundles.append(b)
-        } else {
-            languageBundles.append(Bundle.main)
-        }
+        languageBundles.append(Bundle.main)
         return languageBundles
     }
     /// Add custom bundle
