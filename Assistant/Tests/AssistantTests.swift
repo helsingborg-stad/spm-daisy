@@ -216,13 +216,13 @@ final class AssistantTests: XCTestCase {
                 voiceCommands: createDB()
             )
         )
-        assistant.availableLocalesPublisher.sink { locales in
-            guard let locales = locales else {
+        assistant.languageUpdatesAvailablePublisher.sink { locales in
+            guard let locales = assistant.getAvailableLangaugeCodes() else {
                 print("nothing?")
                 return
             }
-            print(locales.map({ $0.identifier}))
-            XCTAssert(locales.contains(Locale(identifier: "en_US")))
+            print(locales.map({ $0}))
+            XCTAssert(locales.contains("en_US"))
             expectation.fulfill()
         }.store(in: &cancellables)
         wait(for: [expectation], timeout: 5)
