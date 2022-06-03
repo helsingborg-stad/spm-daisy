@@ -174,10 +174,15 @@ public class Dragoman: ObservableObject {
     /// - Parameter language: langauge bundle to load
     /// - Returns: a language specific bundle or nil
     static private func bundleByLanguageCode(bundle:Bundle, for language:LanguageKey) -> Bundle? {
-        guard let path = bundle.path(forResource: language, ofType: "lproj") else {
-            return nil
+        if let path = bundle.path(forResource: language, ofType: "lproj"), let bun = Bundle(path: path) {
+            return bun
         }
-        return Bundle(path: path)
+        if language.contains("_"), let lang = language.split(separator: "_").first {
+            if let path = bundle.path(forResource: String(lang), ofType: "lproj"), let bun = Bundle(path: path) {
+                return bun
+            }
+        }
+        return nil
     }
     /// Remove all files from current bundle
     public func clean() throws {
