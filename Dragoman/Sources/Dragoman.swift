@@ -56,8 +56,6 @@ public class Dragoman: ObservableObject {
             UserDefaults.standard.set(baseBundle.bundleURL.lastPathComponent, forKey: defaultKeyMame)
         }
     }
-    /// The current app bundle, ie Bundle.main in your application
-    private var appBundle: Bundle
     /// The name of the table where all strings are stored
     private let tableName: String = "Localizable"
     /// The translation service used to translate strings
@@ -94,7 +92,10 @@ public class Dragoman: ObservableObject {
     public var logger:Shout = Shout("Dragoman")
     /// Publisher that triggers whenever a new file is written to disk
     public let changed: AnyPublisher<Void, Never>
-    
+    /// List of bundles to search strings in
+    private var customBundles = Set<Bundle>()
+    /// List of bundles to search strings in
+    private var languageBundles = [Bundle]()
     /// Initializes a new
     /// - Parameters:
     ///   - translationService: transaltion service to use when calling  translate(texts:from:to:)
@@ -109,8 +110,8 @@ public class Dragoman: ObservableObject {
             baseBundle = Bundle.main
             disabled = true
         }
-        appBundle = Self.appBundle(for: language)
-        bundle = Self.languageBundle(bundle: baseBundle, for: language)
+        bundle = Self.bundleByLanguageCode(bundle: baseBundle, for: language) ?? baseBundle
+        
         self.translationService = translationService
         self.changed = changedSubject.eraseToAnyPublisher()
         self.updateTranslationServiceSubscriber()
@@ -169,26 +170,6 @@ public class Dragoman: ObservableObject {
             }
         }
     }
-    /// Loads the a language bundle (LANG.lproj) from an application (typically Bundle.main)
-    /// If no language bundle exits Bundle.main will be returned
-    /// - Parameter language: langauge bundle to load
-    /// - Returns: a language specific bundle
-    static private func appBundle(for language:LanguageKey) -> Bundle {
-        if let b = bundleByLanguageCode(bundle: Bundle.main, for: language) {
-            return b
-        }
-        return Bundle.main
-    }
-    /// Loads the a language bundle (LANG.lproj) from a bundle
-    /// If no language bundle exits `bundle` will be returned
-    /// - Parameter language: langauge bundle to load
-    /// - Returns: a language specific bundle
-    static private func languageBundle(bundle:Bundle, for language:LanguageKey) -> Bundle {
-        if let b = bundleByLanguageCode(bundle: bundle, for: language) {
-            return b
-        }
-        return bundle
-    }
     /// Loads the a language bundle (LANG.lproj) from a bundle if it exits
     /// - Parameter language: langauge bundle to load
     /// - Returns: a language specific bundle or nil
@@ -196,10 +177,7 @@ public class Dragoman: ObservableObject {
         guard let path = bundle.path(forResource: language, ofType: "lproj") else {
             return nil
         }
-        guard let languageBundle = Bundle(path: path) else {
-            return nil
-        }
-        return languageBundle
+        return Bundle(path: path)
     }
     /// Remove all files from current bundle
     public func clean() throws {
@@ -303,21 +281,46 @@ public class Dragoman: ObservableObject {
         }
         return t
     }
+    /// Seaches all available bundles for a string
+    /// - Parameter key: a key that corrensponds with a locaized value
+    /// - Parameter value: a default value to return in case no localized value can be found
+    /// - Returns: returns a localized string. if no string is found and the `value` is set to a string, the `value` will be returned. If `value` is nil the `key` will be returned
+    private func getString(forKey key:String, value:String? = nil) -> String {
+        let error = "## error no translation \(UUID().uuidString) ##"
+        for b in languageBundles {
+            let str = b.localizedString(forKey: key, value: error, table: nil)
+            if str == error {
+                continue
+            }
+            return str
+        }
+        return value ?? key
+    }
+    /// Searches all available bundles for a string in a specific language.
+    /// - Parameter key: a key that corrensponds with a locaized value
+    /// - Parameter language: the language in which to return the value
+    /// - Parameter value: a default value to return in case no localized value can be found
+    /// - Returns: returns a localized string. if no string is found and the `value` is set to a string, the `value` will be returned. If `value` is nil the `key` will be returned
+    private func getString(forKey key:String, in language:LanguageKey, value:String? = nil) -> String {
+        let error = "## error no translation \(UUID().uuidString) ##"
+        for b in langaugeBundles(in: language) {
+            let str = b.localizedString(forKey: key, value: error, table: nil)
+            if str == error {
+                continue
+            }
+            return str
+        }
+        return value ?? key
+    }
     /// Checks if the text is translated in provided languages
     /// - Parameters:
     ///   - text: the text
     ///   - languages: languages to use
     /// - Returns: true if translations found, false if not
     public func isTranslated(_ text:String, in languages:[LanguageKey]) -> Bool {
-        let lang = languages
         let error = "## error no translation \(UUID().uuidString) ##"
-        for l in lang {
-            let str = Self.appBundle(for: language).localizedString(forKey: text, value: error, table: nil)
-            if str == error, let b = Self.bundleByLanguageCode(bundle: baseBundle, for: l) {
-                if b.localizedString(forKey: text, value: error, table: tableName) == error {
-                    return false
-                }
-            } else {
+        for l in languages {
+            if getString(forKey: text, in: l, value: error) == error {
                 return false
             }
         }
@@ -328,12 +331,7 @@ public class Dragoman: ObservableObject {
     /// - Parameter value: a default value to return in case no localized value can be found
     /// - Returns: returns a localized string. if no string is found and the `value` is set to a string, the `value` will be returned. If `value` is nil the `key` will be returned
     public func string(forKey key:String, value:String? = nil) -> String {
-        let error = "## error no translation \(UUID().uuidString) ##"
-        let str = appBundle.localizedString(forKey: key, value: error, table: nil)
-        if str == error {
-            return bundle.localizedString(forKey: key, value: value, table: tableName)
-        }
-        return str
+        return getString(forKey: key, value: value)
     }
     /// Get string in the provided language. This method will first check if the translation is available in the appBundle
     /// - Parameter key: a key that corrensponds with a locaized value
@@ -342,25 +340,17 @@ public class Dragoman: ObservableObject {
     /// - Returns: returns a localized string. if no string is found and the `value` is set to a string, the `value` will be returned. If `value` is nil the `key` will be returned
     public func string(forKey key:String, in language:LanguageKey, value:String? = nil) -> String {
         if language == self.language {
-            return string(forKey: key, value: value)
+            return getString(forKey: key, value: value)
         }
-        let error = "## error no translation \(UUID().uuidString) ##"
-        let str = Self.appBundle(for: language).localizedString(forKey: key, value: error, table: nil)
-        if str == error {
-            return Self.languageBundle(bundle: baseBundle, for: language).localizedString(forKey: key, value: value, table: tableName)
-        }
-        return str
+        return getString(forKey: key, in: language, value: value)
     }
     /// Get string in the provided locale. This method will first check if the translation is available in the appBundle
     /// - Parameter key: a key that corrensponds with a locaized value
-    /// - Parameter locale: the locale in which to return the value (uses `Locale.languageCode`)
+    /// - Parameter locale: the locale in which to return the value (uses `Locale.identifier`)
     /// - Parameter value: a default value to return in case no localized value can be found
     /// - Returns: returns a localized string. if no string is found and the `value` is set to a string, the `value` will be returned. If `value` is nil the `key` will be returned
     public func string(forKey key:String, with locale:Locale, value:String? = nil) -> String {
-        guard let languageCode = locale.languageCode else {
-            return key
-        }
-        return string(forKey: key, in: languageCode,value: value)
+        return getString(forKey: key, in: locale.identifier, value: value)
     }
     /// Write a table to disk
     /// - Parameter translations: the transaltion table to be stored
@@ -392,10 +382,47 @@ public class Dragoman: ObservableObject {
         changedSubject.send()
     }
     /// Updates `bundle` and `appBundle` using the latest `language` parameter.
-    public func updateBundles() {
-        bundle = Self.languageBundle(bundle: baseBundle, for: language)
-        appBundle = Self.appBundle(for: language)
+    private func updateBundles() {
+        if let b = Self.bundleByLanguageCode(bundle: baseBundle, for: language) {
+            self.bundle = b
+        } else {
+            self.bundle = baseBundle
+        }
+        self.languageBundles = langaugeBundles(in: language)
         changedSubject.send()
+    }
+    /// Get langauge bundles from custom all available bundles
+    /// - Parameter language: target language
+    /// - Returns: array of bundles
+    private func langaugeBundles(in language:LanguageKey) -> [Bundle]{
+        var languageBundles = [Bundle]()
+        if let b = Self.bundleByLanguageCode(bundle: baseBundle, for: language) {
+            languageBundles.append(b)
+        }
+        for b in customBundles {
+            guard let b = Self.bundleByLanguageCode(bundle: b, for: language) else {
+                continue
+            }
+            languageBundles.append(b)
+        }
+        if let b = Self.bundleByLanguageCode(bundle: Bundle.main, for: language) {
+            languageBundles.append(b)
+        }
+        return languageBundles
+    }
+    /// Add custom bundle
+    /// - Parameter bundle: the bundle to add
+    /// - Warning: **Don't add** `Bundle.main`, it's already included
+    public func add(bundle:Bundle) {
+        customBundles.insert(bundle)
+        updateBundles()
+    }
+    /// Removes custom bundle
+    /// - Parameter bundle: the bundle to remove
+    /// - Warning: **Don't remove** `Bundle.main`,  it's always included
+    public func remove(bundle:Bundle) {
+        customBundles.remove(bundle)
+        updateBundles()
     }
 }
 

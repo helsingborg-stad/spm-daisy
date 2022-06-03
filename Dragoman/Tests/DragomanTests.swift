@@ -90,6 +90,8 @@ final class DragomanTests: XCTestCase {
                     XCTFail(error.localizedDescription)
                 }
             } receiveValue: {
+                let str = dragoman.string(forKey: secondTest, in: "en")
+                print(str)
                 XCTAssert(dragoman.string(forKey: secondTest, in: "en") == secondTestTranslated)
                 
                 let dragoman2 = Dragoman(language: "sv")
@@ -99,7 +101,7 @@ final class DragomanTests: XCTestCase {
                 expectation.fulfill()
             }.store(in: &cancellables)
         }.store(in: &cancellables)
-        wait(for: [expectation], timeout: 5)
+        wait(for: [expectation], timeout: 10)
     }
     func testTranslationQueue() {
         let expectation = XCTestExpectation(description: "testDragoman")
