@@ -220,6 +220,17 @@ public class Assistant: ObservableObject,DaisyAssistant {
         }
         return dragoman.string(forKey: key, in: languageKey, value: value)
     }
+    /// Get localized formatted string
+    /// - Parameters:
+    ///   - key: key representing the localized string
+    ///   - locale: optional locale from the supportedLanguages. `self.locale` will be used if nil
+    ///   - value: an optional default value used if the key is missing a localized value
+    ///   - arguments: formatting values
+    /// - Returns: the localized formatted string
+    public func formattedString(forKey key:String,  in locale:Locale? = nil,value:String? = nil, _ arguments:CVarArg...) -> String {
+        let result = string(forKey: key, in: locale, value: value)
+        return String(format: result, locale: locale, arguments: arguments)
+    }
     /// Creates an utterance
     /// - Parameters:
     ///   - key: key representing the localized string
