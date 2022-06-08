@@ -6,7 +6,7 @@ import AudioSwitchboard
 import TextTranslator
 @testable import Assistant
 
-enum VoiceCommands : String, NLKeyDefinition {
+enum VoiceCommands : String, CaseIterable, CustomStringConvertible {
     var description: String {
         return self.rawValue
     }
@@ -124,25 +124,33 @@ class TestSTT : STTService {
     }
     
 }
-func createDB() -> TestParser.DB {
-    var db = TestParser.DB()
+func createDB() -> NLParser.DB {
+    var db = NLParser.DB()
     let commands = [
-        VoiceCommands.leave:["back","backwards"],
-        VoiceCommands.home:["home"],
-        VoiceCommands.weather:["weather","rain"],
-        VoiceCommands.food:["food","i am hungry"],
-        VoiceCommands.calendar:["calendar","today"],
-        VoiceCommands.instagram:["instagram"]
+        VoiceCommands.leave.rawValue:["back","backwards"],
+        VoiceCommands.home.rawValue:["home"],
+        VoiceCommands.weather.rawValue:["weather","rain"],
+        VoiceCommands.food.rawValue:["food","i am hungry"],
+        VoiceCommands.calendar.rawValue:["calendar","today"],
+        VoiceCommands.instagram.rawValue:["instagram"]
     ]
     for l in supportedLocales {
         db[l] = commands
     }
     return db
 }
+extension Assistant.CommandBridge.Result {
+    func contains(_ key: VoiceCommands) -> Bool {
+        return contains(key.description)
+    }
+}
+extension Assistant {
+    func listen(for keys:[VoiceCommands]) -> AnyPublisher<CommandBridge.Result,Never> {
+        return listen(for: keys.map({ $0.description }))
+    }
+}
 var switchboard = AudioSwitchboard()
 var cancellabels = Set<AnyCancellable>()
-typealias TestParser = NLParser<VoiceCommands>
-typealias MyAssistant = Assistant<VoiceCommands>
 final class AssistantTests: XCTestCase {
     var cancellables = Set<AnyCancellable>()
     func testNLParser() {
@@ -150,12 +158,13 @@ final class AssistantTests: XCTestCase {
         let db = createDB()
         let pub = PassthroughSubject<String,Never>()
         var shouldhit = VoiceCommands.allCases
-        let nlparser = TestParser(locale: locale, db: db, stringPublisher: pub.eraseToAnyPublisher())
+        let nlparser = NLParser(locale: locale, db: db, stringPublisher: pub.eraseToAnyPublisher())
         nlparser.publisher(using: VoiceCommands.allCases).sink { result in
             for v in VoiceCommands.allCases {
                 if result.contains(v) {
                     shouldhit.removeAll { $0 == v }
                 }
+                result.contains(.food)
             }
         }.store(in: &cancellabels)
         pub.send("back")
@@ -164,15 +173,15 @@ final class AssistantTests: XCTestCase {
         pub.send("i am hungry")
         pub.send("today")
         
-        XCTAssertFalse(shouldhit.contains(.food))
-        XCTAssert(shouldhit.contains(.weather))
-        XCTAssert(shouldhit.contains(.instagram))
+        XCTAssertFalse(shouldhit.contains(.food)) // found
+        XCTAssert(shouldhit.contains(.weather)) // not found
+        XCTAssert(shouldhit.contains(.instagram)) // not found
     }
     func testAssistant() {
         let expectation = XCTestExpectation(description: "testDragoman")
         let sttService = TestSTT()
         var shouldhit = VoiceCommands.allCases
-        let assistant = MyAssistant(
+        let assistant = Assistant(
             settings: .init(
                 sttService: sttService,
                 ttsServices: AppleTTS(audioSwitchBoard: switchboard),
@@ -207,7 +216,7 @@ final class AssistantTests: XCTestCase {
         let expectation = XCTestExpectation(description: "testDragoman")
         let sttService = TestSTT()
 
-        let assistant = MyAssistant(
+        let assistant = Assistant(
             settings: .init(
                 sttService: sttService,
                 ttsServices: AppleTTS(audioSwitchBoard: switchboard),
@@ -222,7 +231,7 @@ final class AssistantTests: XCTestCase {
                 return
             }
             print(locales.map({ $0}))
-            XCTAssert(locales.contains("en_US"))
+            XCTAssert(locales.contains("en"))
             expectation.fulfill()
         }.store(in: &cancellables)
         wait(for: [expectation], timeout: 5)

@@ -18,13 +18,13 @@ public enum AssistantError: Error {
 }
 
 /// A package that manages voice commands and translations, and, makes sure that TTS and STT is not interfering with eachother
-public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
+public class Assistant: ObservableObject {
     /// Used to clairify the order of `.speak((uttearance,tag))` method
     public typealias UtteranceString = String
     /// Used to clairify the order of `.speak((uttearance,tag))` method
     public typealias UtteranceTag = String
-    /// NLParser for the supploed keys
-    public typealias CommandBridge = NLParser<Keys>
+    /// NLParser for the supported keys
+    public typealias CommandBridge = NLParser
     /// Settings used to configure the assistans
     public struct Settings {
         /// The stt service used
@@ -66,7 +66,7 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
             self.supportedLocales = supportedLocales
             self.mainLocale = mainLocale ?? supportedLocales.first ?? Locale.current
             self.translator = translator
-            self.voiceCommands = voiceCommands ?? Keys.createLocalizedDatabasePlist(languages: supportedLocales)
+            self.voiceCommands = voiceCommands ?? NLParser.readLocalizedDatabasePlist()
         }
     }
     
@@ -86,7 +86,7 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
     /// Manages a queue of tasks, typically TTS utterances and speech recognition.
     public let taskQueue = TaskQueue()
     /// Supported locales, used by dragoman, NLParser etc
-    public let supportedLocales:[Locale]
+    public var supportedLocales:[Locale]
     /// The main locale, used by the `TextTranslator` to manage translations when using nil `from` and `to` properties
     public let mainLocale:Locale
     
@@ -396,7 +396,7 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
         }
         return set
     }
-    
+
     /// Cancells all currently running speech services, ie TTS or STT.
     public func cancelSpeechServices() {
         taskQueue.clear()
@@ -405,8 +405,8 @@ public class Assistant<Keys: NLKeyDefinition> : ObservableObject {
     /// Listen (from STT result) for a set of key
     /// - Parameter keys: keys (or rather their acompaning values) to listen for
     /// - Returns: publisher triggered when a user utterance triggers one or more keys
-    public func listen(for keys:[Keys]) -> AnyPublisher<CommandBridge.Result,Never> {
-        return commandBridge.publisher(using: keys)
+    public func listen(for keys:[CustomStringConvertible]) -> AnyPublisher<CommandBridge.Result,Never> {
+        return commandBridge.publisher(using: keys.map({ $0.description }))
     }
     /// Translate a one or more strings
     /// - Parameters:
