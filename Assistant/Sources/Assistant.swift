@@ -18,9 +18,27 @@ public enum AssistantError: Error {
     /// If missing valid to-language during translation
     case emptyTranslationLanguage
 }
-
+public protocol DaisyAssistant {
+    var languageUpdatesAvailablePublisher: AnyPublisher<Void,Never> { get }
+    var isSpeakingPublisher:AnyPublisher<Bool,Never> { get }
+    var locale:Locale { get }
+    var currentlySpeakingPublisher:AnyPublisher<TTSUtterance?,Never> { get }
+    var translationBundlePublisher:AnyPublisher<Bundle,Never> { get }
+    func string(forKey key:String, in locale:Locale?, value:String?) -> String
+    func utterance(for key:String, in locale:Locale?, value:String?, tag:String?) -> TTSUtterance
+    func speak(_ values:(String,String?)..., interrupt:Bool) -> [TTSUtterance]
+    func speak(_ strings:String..., interrupt:Bool) -> [TTSUtterance]
+    func speak(_ values:[(String,String?)], interrupt:Bool) -> [TTSUtterance]
+    func speak(_ strings:[String], interrupt:Bool) -> [TTSUtterance]
+    func speak(_ utterances:TTSUtterance..., interrupt:Bool)
+    func speak(_ utterances:[TTSUtterance], interrupt:Bool)
+    func cancelSpeechServices()
+    func translate(_ strings:String..., from:LanguageKey?, to:[LanguageKey]?) -> AnyPublisher<Void, Error>
+    func translate(_ strings:[String], from:LanguageKey?, to:[LanguageKey]?) -> AnyPublisher<Void, Error>
+    func getAvailableLangaugeCodes(includeTTSService:Bool, includeSTTService:Bool, includeTextTranslation:Bool) -> Set<String>?
+}
 /// A package that manages voice commands and translations, and, makes sure that TTS and STT is not interfering with eachother
-public class Assistant: ObservableObject {
+public class Assistant: ObservableObject,DaisyAssistant {
     /// Used to clairify the order of `.speak((uttearance,tag))` method
     public typealias UtteranceString = String
     /// Used to clairify the order of `.speak((uttearance,tag))` method
