@@ -16,7 +16,7 @@ public enum AssistantError: Error {
     /// In case the main locale is invalid (ie missing a languageCode)
     case invalidMainLocale
 }
-public protocol DaisyAssistant {
+public protocol DaisyAssistant : ObservableObject {
     var languageUpdatesAvailablePublisher: AnyPublisher<Void,Never> { get }
     var isSpeakingPublisher:AnyPublisher<Bool,Never> { get }
     var locale:Locale { get }
