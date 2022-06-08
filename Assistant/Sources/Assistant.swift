@@ -16,27 +16,9 @@ public enum AssistantError: Error {
     /// In case the main locale is invalid (ie missing a languageCode)
     case invalidMainLocale
 }
-public protocol DaisyAssistant : ObservableObject {
-    var languageUpdatesAvailablePublisher: AnyPublisher<Void,Never> { get }
-    var isSpeakingPublisher:AnyPublisher<Bool,Never> { get }
-    var locale:Locale { get }
-    var currentlySpeakingPublisher:AnyPublisher<TTSUtterance?,Never> { get }
-    var translationBundlePublisher:AnyPublisher<Bundle,Never> { get }
-    func string(forKey key:String, in locale:Locale?, value:String?) -> String
-    func utterance(for key:String, in locale:Locale?, value:String?, tag:String?) -> TTSUtterance
-    func speak(_ values:(String,String?)..., interrupt:Bool) -> [TTSUtterance]
-    func speak(_ strings:String..., interrupt:Bool) -> [TTSUtterance]
-    func speak(_ values:[(String,String?)], interrupt:Bool) -> [TTSUtterance]
-    func speak(_ strings:[String], interrupt:Bool) -> [TTSUtterance]
-    func speak(_ utterances:TTSUtterance..., interrupt:Bool)
-    func speak(_ utterances:[TTSUtterance], interrupt:Bool)
-    func cancelSpeechServices()
-    func translate(_ strings:String..., from:LanguageKey?, to:[LanguageKey]?) -> AnyPublisher<Void, Error>
-    func translate(_ strings:[String], from:LanguageKey?, to:[LanguageKey]?) -> AnyPublisher<Void, Error>
-    func getAvailableLangaugeCodes(includeTTSService:Bool, includeSTTService:Bool, includeTextTranslation:Bool) -> Set<String>?
-}
+
 /// A package that manages voice commands and translations, and, makes sure that TTS and STT is not interfering with eachother
-public class Assistant: ObservableObject,DaisyAssistant {
+public class Assistant: ObservableObject {
     /// Used to clairify the order of `.speak((uttearance,tag))` method
     public typealias UtteranceString = String
     /// Used to clairify the order of `.speak((uttearance,tag))` method
@@ -107,6 +89,12 @@ public class Assistant: ObservableObject,DaisyAssistant {
     public var supportedLocales:[Locale]
     /// The main locale, used by the `TextTranslator` to manage translations when using nil `from` and `to` properties
     public let mainLocale:Locale
+    /// Preffered TTS gender
+    public var ttsGender: TTSGender = .other
+    /// Adjust the pitch of the TTS voice, a value between 0 and 2 where default is 1
+    public var ttsPitch: Double? = nil
+    /// Adjust the rate of the TTSvoice, a value between 0 and 2 where default is 1
+    public var ttsRate: Double? = nil
     
     /// Currently selected locale that changes language for the STT, NLParser and dragoman
     @Published public var locale:Locale {
@@ -154,24 +142,60 @@ public class Assistant: ObservableObject,DaisyAssistant {
         $translationBundle.eraseToAnyPublisher()
     }
     /// Initialize a new instans with the provided settings
-    /// - Parameter settings: settings to be used
-    public init(settings:Settings) {
-        self.supportedLocales = settings.supportedLocales
-        self.mainLocale = settings.mainLocale
-        self.dragoman = Dragoman(translationService:settings.translator, language:settings.mainLocale.languageCode ?? "en")
-        self.stt = STT(service: settings.sttService)
-        self.tts = TTS(settings.ttsServices)
+    /// - Parameters:
+    ///   - sttService: The stt service used
+    ///   - ttsServices: A list of TTSServices to use. The first available will be used
+    ///   - supportedLocales: Supported locales, mapped to dragoman, NLParser etc. Default is an empty array which is populated from `Bundle.main.localizations`
+    ///   - mainLocale: The main locale, used by the `TextTranslator` to manage translations when using nil `from` and `to` properties. Default is the first language in the supportedLanguages, or Locale.current
+    ///   - translator: The voice commands available in the app
+    ///   - voiceCommands: The text translator service
+    ///   - ttsGender: Preffered TTS gender
+    ///   - ttsPitch: Adjust the pitch of the TTS voice, a value between 0 and 2 where default is 1
+    ///   - ttsRate: Adjust the rate of the TTSvoice, a value between 0 and 2 where default is 1
+    ///   - audioSwitchboard: Appending your AudioSwitchboard will automatically turn on or off stt and tts depending on harware availability.
+    public init(
+        sttService: STTService,
+        ttsServices: TTSService...,
+        supportedLocales:[Locale] = [],
+        mainLocale:Locale? = nil,
+        translator:TextTranslationService? = nil,
+        voiceCommands:CommandBridge.DB? = nil,
+        ttsGender:TTSGender = .other,
+        ttsPitch:Double? = nil,
+        ttsRate:Double? = nil,
+        audioSwitchboard:AudioSwitchboard? = nil
+    ) {
+        let mainLocale =  mainLocale ?? supportedLocales.first ?? Locale.current
+        var supportedLocales = supportedLocales
+        if supportedLocales.count == 0 {
+            Bundle.main.localizations.forEach { str in
+                supportedLocales.append(Locale(identifier: str))
+            }
+        }
+        self.supportedLocales = supportedLocales
+        self.mainLocale = mainLocale
+        self.dragoman = Dragoman(translationService:translator, language:mainLocale.languageCode ?? "en")
+        self.stt = STT(service: sttService)
+        self.tts = TTS(ttsServices)
         self.translationBundle = dragoman.bundle
-        self.locale = settings.mainLocale
-        
+        self.locale = mainLocale
+        self.ttsGender = ttsGender
+        self.ttsPitch = ttsPitch
+        self.ttsRate = ttsRate
+
         commandBridge = CommandBridge(
             locale: mainLocale,
-            db: settings.voiceCommands,
+            db: voiceCommands ?? NLParser.readLocalizedDatabasePlist(),
             stringPublisher: sttStringPublisher.eraseToAnyPublisher()
         )
-        commandBridge.locale = settings.mainLocale
+        commandBridge.locale = mainLocale
         commandBridge.$contextualStrings.sink { [weak self] arr in
             self?.stt.contextualStrings = arr
+        }.store(in: &cancellables)
+        
+        audioSwitchboard?.$availableServices.sink { [weak self] services in
+            self?.tts.disabled = services.contains(.play) == false
+            self?.stt.disabled = services.contains(.record) == false
         }.store(in: &cancellables)
         
         stt.results.sink { [weak self] res in
@@ -203,9 +227,9 @@ public class Assistant: ObservableObject,DaisyAssistant {
             self?.updateAvailableLocales()
         }.store(in: &cancellables)
         
-        stt.locale = settings.mainLocale
-        dragoman.language = settings.mainLocale.languageCode!
-        commandBridge.locale = settings.mainLocale
+        stt.locale = mainLocale
+        dragoman.language = mainLocale.languageCode!
+        commandBridge.locale = mainLocale
         taskQueue.queue(.unspecified, using: stt)
     }
     /// Get localized string
@@ -240,7 +264,15 @@ public class Assistant: ObservableObject,DaisyAssistant {
     /// - Returns: an utterance configured with provided values
     public func utterance(for key:String, in locale:Locale? = nil, value:String? = nil, tag:String? = nil) -> TTSUtterance {
         let locale = locale ?? self.locale
-        return TTSUtterance(self.string(forKey: key,in:locale ,value: value), locale: locale, tag: tag)
+        return TTSUtterance(
+            self.string(forKey: key,in:locale ,value: value),
+            ssml: nil,
+            gender: ttsGender,
+            locale: locale,
+            rate: ttsRate,
+            pitch: ttsPitch,
+            tag: tag
+        )
     }
     // MARK: Task Queue
     /// Interrupt other tasks with a set of utterances
@@ -442,38 +474,39 @@ public class Assistant: ObservableObject,DaisyAssistant {
     ///   - strings: string (or strings) to translate
     ///   - from: the language of the strings provided, will use the `Assistant.mainLocale` if nil
     ///   - to: the langauges to translate into (languageCode), will use `Assistant.supportedLanguages` if nil
-    @discardableResult public func translate(_ strings:String..., from:LanguageKey? = nil, to:[LanguageKey]? = nil) -> AnyPublisher<Void, Error>  {
-        return translate(strings, from: from, to: to)
+    ///   - ignoreTranslatedValues: Calls the translation service regladless of the value already existing in dragoman
+    /// - Returns: completion publisher
+    @discardableResult public func translate(_ strings:String..., from:Locale? = nil, to:[Locale]? = nil, ignoreTranslatedValues:Bool = false) -> AnyPublisher<Void, Error>  {
+        return translate(strings, from: from, to: to,ignoreTranslatedValues:ignoreTranslatedValues)
     }
     /// Translate a one or more strings
     /// - Parameters:
     ///   - strings: string (or strings) to translate
     ///   - from: the language of the strings provided, will use the `Assistant.mainLocale` if nil
     ///   - to: the langauges to translate into (languageCode), will use `Assistant.supportedLanguages` if nil
-    @discardableResult public func translate(_ strings:String..., from:Locale? = nil, to:[Locale]? = nil) -> AnyPublisher<Void, Error> {
+    ///   - ignoreTranslatedValues: Calls the translation service regladless of the value already existing in dragoman
+    /// - Returns: completion publisher
+    @discardableResult public func translate(_ strings:[String], from:Locale? = nil, to:[Locale]? = nil, ignoreTranslatedValues:Bool = false) -> AnyPublisher<Void, Error>  {
         if disabled {
             return Fail(error: AssistantError.disabled).eraseToAnyPublisher()
         }
-        guard let from = (from ?? mainLocale).languageCode else {
-            return Fail(error: AssistantError.invalidMainLocale).eraseToAnyPublisher()
+        let fromLang = from?.identifier ?? mainLocale.identifier
+        let toLang = (to ?? supportedLocales).map({$0.identifier})
+        var toTranslate = [String]()
+        if ignoreTranslatedValues {
+            toTranslate = strings
+        } else {
+            for t in strings {
+                if dragoman.isTranslated(t, in: toLang) {
+                    continue
+                }
+                toTranslate.append(t)
+            }
+            if toTranslate.count == 0 {
+                return Result.Publisher(()).eraseToAnyPublisher()
+            }
         }
-        let to = (to ?? supportedLocales).compactMap({$0.languageCode })
-        return translate(strings, from: from, to: to)
-    }
-    /// Translate a one or more strings
-    /// - Parameters:
-    ///   - strings: string (or strings) to translate
-    ///   - from: the language of the strings provided, will use the `Assistant.mainLocale` if nil
-    ///   - to: the langauges to translate into (languageCode), will use `Assistant.supportedLanguages` if nil
-    @discardableResult public func translate(_ strings:[String], from:LanguageKey? = nil, to:[LanguageKey]? = nil) -> AnyPublisher<Void, Error>  {
-        if disabled {
-            return Fail(error: AssistantError.disabled).eraseToAnyPublisher()
-        }
-        guard let from = from ?? mainLocale.languageCode else {
-            return Fail(error: AssistantError.invalidMainLocale).eraseToAnyPublisher()
-        }
-        let to = to ?? supportedLocales.filter { $0.languageCode != nil }.compactMap({$0.languageCode})
-        let publisher = dragoman.translate(strings, from: from, to: to)
+        let publisher = dragoman.translate(toTranslate, from: fromLang, to: toLang)
         var cancellable:AnyCancellable?
         cancellable = publisher.sink { compl in
             if case let .failure(error) = compl {

@@ -164,7 +164,6 @@ final class AssistantTests: XCTestCase {
                 if result.contains(v) {
                     shouldhit.removeAll { $0 == v }
                 }
-                result.contains(.food)
             }
         }.store(in: &cancellabels)
         pub.send("back")
@@ -182,13 +181,11 @@ final class AssistantTests: XCTestCase {
         let sttService = TestSTT()
         var shouldhit = VoiceCommands.allCases
         let assistant = Assistant(
-            settings: .init(
-                sttService: sttService,
-                ttsServices: AppleTTS(audioSwitchBoard: switchboard),
-                supportedLocales: [Locale(identifier: "en_US"),Locale(identifier: "sv_SE")],
-                translator: TestTextTranslator(),
-                voiceCommands: createDB()
-            )
+            sttService: sttService,
+            ttsServices: AppleTTS(audioSwitchBoard: switchboard),
+            supportedLocales: [Locale(identifier: "en_US"),Locale(identifier: "sv_SE")],
+            translator: TestTextTranslator(),
+            voiceCommands: createDB()
         )
         assistant.listen(for: VoiceCommands.allCases).sink { result in
             debugPrint(result)
@@ -217,13 +214,11 @@ final class AssistantTests: XCTestCase {
         let sttService = TestSTT()
 
         let assistant = Assistant(
-            settings: .init(
-                sttService: sttService,
-                ttsServices: AppleTTS(audioSwitchBoard: switchboard),
-                supportedLocales: [Locale(identifier: "en_US"),Locale(identifier: "sv_SE")],
-                translator: TestTextTranslator(),
-                voiceCommands: createDB()
-            )
+            sttService: sttService,
+            ttsServices: AppleTTS(audioSwitchBoard: switchboard),
+            supportedLocales: [Locale(identifier: "en_US"),Locale(identifier: "sv_SE")],
+            translator: TestTextTranslator(),
+            voiceCommands: createDB()
         )
         assistant.languageUpdatesAvailablePublisher.sink { locales in
             guard let locales = assistant.getAvailableLangaugeCodes() else {
