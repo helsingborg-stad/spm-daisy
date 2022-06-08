@@ -18,7 +18,7 @@ public enum AssistantError: Error {
     /// If missing valid to-language during translation
     case emptyTranslationLanguage
 }
-public protocol DaisyAssistant {
+public protocol DaisyAssistant : ObservableObject {
     var languageUpdatesAvailablePublisher: AnyPublisher<Void,Never> { get }
     var isSpeakingPublisher:AnyPublisher<Bool,Never> { get }
     var locale:Locale { get }
