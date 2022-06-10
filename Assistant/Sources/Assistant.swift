@@ -15,6 +15,8 @@ public enum AssistantError: Error {
     case disabled
     /// In case the main locale is invalid (ie missing a languageCode)
     case invalidMainLocale
+    /// If missing valid to-language during translation
+    case emptyTranslationLanguage
 }
 
 /// A package that manages voice commands and translations, and, makes sure that TTS and STT is not interfering with eachother
@@ -491,7 +493,11 @@ public class Assistant: ObservableObject {
             return Fail(error: AssistantError.disabled).eraseToAnyPublisher()
         }
         let fromLang = from?.identifier ?? mainLocale.identifier
-        let toLang = (to ?? supportedLocales).map({$0.identifier})
+        var toLang = (to ?? supportedLocales).map({$0.identifier})
+        toLang.removeAll { $0 == fromLang }
+        if toLang.isEmpty {
+            return Fail(error: AssistantError.emptyTranslationLanguage).eraseToAnyPublisher()
+        }
         var toTranslate = [String]()
         if ignoreTranslatedValues {
             toTranslate = strings
