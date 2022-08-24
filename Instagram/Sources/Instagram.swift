@@ -402,7 +402,7 @@ public final class Instagram : NSObject, ObservableObject, ASWebAuthenticationPr
         guard let config = config else {
             return Fail(error: InstagramError.missingConfig).eraseToAnyPublisher()
         }
-        guard let url = URL(string: "\(config.serverURL)/auth/\(code)") else {
+        guard let url = URL(string: "\(config.serverURL)/accessToken/\(code)") else {
             return Fail(error: URLError(.badURL)).eraseToAnyPublisher()
         }
         return URLSession.shared.dataTaskPublisher(for:URLRequest(url: url))
