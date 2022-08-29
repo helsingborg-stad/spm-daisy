@@ -365,7 +365,7 @@ public class Assistant: ObservableObject,DaisyAssistant {
     @discardableResult public func speak(_ values:[(UtteranceString,UtteranceTag?)], interrupt:Bool = true) -> [TTSUtterance] {
         var arr = [TTSUtterance]()
         for value in values {
-            arr.append(self.utterance(for: value.0, tag: value.1))
+            arr.append(self.utterance(for: value.0.withoutEmojis, tag: value.1))
         }
         if interrupt {
             self.interrupt(using: arr)
@@ -392,7 +392,7 @@ public class Assistant: ObservableObject,DaisyAssistant {
     @discardableResult public func speak(_ strings:[String], interrupt:Bool = true) -> [TTSUtterance] {
         var arr = [TTSUtterance]()
         for string in strings {
-            arr.append(self.utterance(for: string))
+            arr.append(self.utterance(for: string.withoutEmojis)) // Strip emojis
         }
         self.speak(arr,interrupt: interrupt)
         return arr
@@ -589,4 +589,10 @@ public class Assistant: ObservableObject,DaisyAssistant {
         }
     }
 
+}
+
+public extension String {
+    var withoutEmojis: String {
+        return self.filter { !($0.unicodeScalars.first?.properties.isEmoji ?? false && $0.unicodeScalars.first?.properties.isEmojiPresentation ?? false) }
+    }
 }
