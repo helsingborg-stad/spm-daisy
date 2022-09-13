@@ -12,7 +12,7 @@ repo_name, project_name -->
 [![License][license-shield]][license-url]
 
 <p>
-  <a href="https://github.com/helsingborg-stad/spm-daisy-collection">
+  <a href="https://github.com/helsingborg-stad/spm-daisy">
     <img src="hbg-github-logo-combo.png" alt="Logo" width="300">
   </a>
 </p>
@@ -42,24 +42,24 @@ Add the package collection to Xcode:
 - Select any library that you are interested in, and rememeber, you can always add more later.
 
 ## Usage
-Each library develiers a specific functionality and each of them has documentation on how to use it. To get started we recommend you have a look at the [Assistant](Documentation/Assistant) library.
+Each library develiers a specific functionality and each of them has documentation on how to use it. To get started we recommend you have a look at the [Assistant](Assistant) library.
 
 | Package | Description |
 |:--|:--|                                                   
-| [AppSettings](AppSettings)                                             | Digital assitant interface
-| [Assistant](Assistant)                                                 | Audio service management
-| [AudioSwitchboard](AudioSwitchboard)                                   | Configuration with MDM App Config support
-| [AutomatedFetcher](AutomatedFetcher)                                   | Reccuring fetches
-| [Dragoman](Dragoman)                                                   | String localization management
-| [FFTPublisher](FFTPublisher)                                           | Audio visualization
-| [Instagram](Instagram)                                                 | Instagram API inter
-| [Meals](Meals)                                                         | For fetching meals
-| [PublicCalendar](PublicCalendar)                                       | Swedish public calendar
-| [Shout](Shout)                                                         | Debug logging
-| [STT](STT)                                                             | Speech to text
-| [TTS](TTS)                                                             | Text to speech
-| [TextTranslator](TextTranslator)                                       | Text translation
-| [Weather](Weather)                                                     | Weather service interface
+| [AppSettings](AppSettings/README.md)               | Digital assitant interface
+| [Assistant](Assistant/README.md)                   | Audio service management
+| [AudioSwitchboard](AudioSwitchboard/README.md)     | Configuration with MDM App Config support
+| [AutomatedFetcher](AutomatedFetcher/README.md)     | Reccuring fetches
+| [Dragoman](Dragoman/README.md)                     | String localization management
+| [FFTPublisher](FFTPublisher/README.md)             | Audio visualization
+| [Instagram](Instagram/README.md)                   | Instagram API inter
+| [Meals](Meals/README.md)                           | For fetching meals
+| [PublicCalendar](PublicCalendar/README.md)         | Swedish public calendar
+| [Shout](Shout/README.md)                           | Debug logging
+| [STT](STT/README.md)                               | Speech to text
+| [TTS](TTS/README.md)                               | Text to speech
+| [TextTranslator](TextTranslator/README.md)         | Text translation
+| [Weather](Weather/README.md)                       | Weather service interface
 
 ## More packages
 There are other packages available to use in your apps, like the [MSCognitiveServices](https://github.com/helsingborg-stad/spm-ms-cognitive-services) that implements the TextTransaltor, STT and TTS protocols for easy use within your app.
@@ -82,14 +82,14 @@ Distributed under the [MIT License][license-url].
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/helsingborg-stad/spm-daisy-collection.svg?style=flat-square
-[contributors-url]: https://github.com/helsingborg-stad/spm-daisy-collection/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/helsingborg-stad/spm-daisy-collection.svg?style=flat-square
-[forks-url]: https://github.com/helsingborg-stad/spm-daisy-collection/network/members
-[stars-shield]: https://img.shields.io/github/stars/helsingborg-stad/spm-daisy-collection.svg?style=flat-square
-[stars-url]: https://github.com/helsingborg-stad/spm-daisy-collection/stargazers
-[issues-shield]: https://img.shields.io/github/issues/helsingborg-stad/spm-daisy-collection.svg?style=flat-square
-[issues-url]: https://github.com/helsingborg-stad/spm-daisy-collection/issues
-[license-shield]: https://img.shields.io/github/license/helsingborg-stad/spm-daisy-collection.svg?style=flat-square
-[license-url]: https://raw.githubusercontent.com/helsingborg-stad/spm-daisy-collection/main/LICENSE
+[contributors-shield]: https://img.shields.io/github/contributors/helsingborg-stad/spm-daisy.svg?style=flat-square
+[contributors-url]: https://github.com/helsingborg-stad/spm-daisy/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/helsingborg-stad/spm-daisy.svg?style=flat-square
+[forks-url]: https://github.com/helsingborg-stad/spm-daisy/network/members
+[stars-shield]: https://img.shields.io/github/stars/helsingborg-stad/spm-daisy.svg?style=flat-square
+[stars-url]: https://github.com/helsingborg-stad/spm-daisy/stargazers
+[issues-shield]: https://img.shields.io/github/issues/helsingborg-stad/spm-daisy.svg?style=flat-square
+[issues-url]: https://github.com/helsingborg-stad/spm-daisy/issues
+[license-shield]: https://img.shields.io/github/license/helsingborg-stad/spm-daisy.svg?style=flat-square
+[license-url]: https://raw.githubusercontent.com/helsingborg-stad/spm-daisy/main/LICENSE
 [platform-shield]: https://img.shields.io/badge/platform-iOS-blue.svg?style=flat-square
