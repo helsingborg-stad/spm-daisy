@@ -5,11 +5,11 @@ A package that manages voice commands, text to speech, translations and localize
 To make the most out of the assistant you might want to have a look at [TextTranslator](https://github.com/helsingborg-stad/spm-text-translator) framework.
 
 ## Voice commands from file
-The the moment the `Assistant` is using regular expressions to parse and trigger events based on STT output. First you need to create an enum that implements the `NLKeyDefinition`
+The the moment the `Assistant` is using regular expressions to parse and trigger events based on STT output. First you need to create an enum that implements the `CustomStringConvertible`
 ```swift
 import Foundation
 import Assistant
-enum VoiceCommands : String, NLKeyDefinition {
+enum VoiceCommands : String, CaseIterable, CustomStringConvertible {
     var description: String {
         return self.rawValue
     }
@@ -50,14 +50,13 @@ import AudioSwitchboard
 import Assistant
 import STT
 import TTS
-/// Create a typealias you can use throughout your app, it's easier than declaring the generic over and over again.
-typealias MyAssistant = Assistant<VoiceCommands>
+
 
 class AppState : ObservableObject {
-    let assistant: MyAssistant
+    let assistant: Assistant
     let switchboard = AudioSwitchboard()
     init() {
-        assistant = MyAssistant(
+        assistant = Assistant(
             settings: .init(
                 sttService: AppleSTT(audioSwitchboard: switchboard),
                 ttsServices: AppleTTS(audioSwitchBoard: switchboard),
@@ -65,6 +64,21 @@ class AppState : ObservableObject {
             )
         )
         /// If you have added a translator you can use the handy `assistant.translate()` methods
+    }
+}
+```
+
+### Extending for convenience
+To make it a little easier to see if your voicecommands has been triggered you can extend assistant with functions to manage your enum
+```swift
+extension Assistant.CommandBridge.Result {
+    func contains(_ key: VoiceCommands) -> Bool {
+        return contains(key.description)
+    }
+}
+extension Assistant {
+    func listen(for keys:[VoiceCommands]) -> AnyPublisher<CommandBridge.Result,Never> {
+        return listen(for: keys.map({ $0.description }))
     }
 }
 ```
@@ -90,11 +104,11 @@ struct ContentView: View {
         VStack {}
             Text(recognizedCommand)
         }
-        .onReceive(assistant.listen(for: [.weather])) { results in
+        .onReceive(assistant.listen(for: [VoiceCommands.weather])) { results in
             /// in case you're listening to multiple commands
 
-            /// if results.contains(.weather) {} 
-            /// else if results.contains(.food) {}
+            /// if results.contains(VoiceCommands.weather) {} 
+            /// else if results.contains(VoiceCommands.food) {}
             recognizedCommand = "I don't have a weather service installed. Pop your head outside to know more"
         }
         .onAppear {

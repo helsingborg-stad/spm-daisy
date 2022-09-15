@@ -88,10 +88,10 @@ final class AutomatedFetcherTests: XCTestCase {
         fetcher.triggered.sink {
             XCTFail("Should not have triggered")
         }.store(in: &cancellables)
-        Timer.scheduledTimer(withTimeInterval: 2, repeats: false) { timer in
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: false) { timer in
             expectation.fulfill()
         }
-        wait(for: [expectation], timeout: 2.0)
+        wait(for: [expectation], timeout: 10)
     }
     func testExampleClass() {
         let expectation = XCTestExpectation(description: "testExampleClass")

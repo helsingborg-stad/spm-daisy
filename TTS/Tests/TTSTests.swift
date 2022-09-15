@@ -57,6 +57,7 @@ final class TTSTests: XCTestCase {
         wait(for: [expectation], timeout: 20.0)
     }
     func testWordBoundary() {
+        XCTFail("Test broken due to changes in iOS 16")
         let expectation = XCTestExpectation(description: "testCancelled")
         let tts = TTS(AppleTTS(audioSwitchBoard: switchBoard))
         let string = "Hello world"

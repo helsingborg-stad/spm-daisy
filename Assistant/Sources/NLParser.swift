@@ -9,56 +9,9 @@ import Foundation
 import STT
 import Combine
 
-
-/// Protocol used to define a set if keys used for find a set of values in a string
-public protocol NLKeyDefinition : CustomStringConvertible & Hashable & CaseIterable & Equatable {
-}
-/// Defualt implementation of the `createLocalizedDatabasePlist` method
-public extension NLKeyDefinition {
-    /// Creates a `Database` from a plist file for a set of languages.
-    /// - Returns: a generated database
-    static func createLocalizedDatabasePlist(fileName:String = "VoiceCommands", languages:[Locale]) -> NLParser<Self>.DB {
-        var propertyListFormat = PropertyListSerialization.PropertyListFormat.xml
-        var db = NLParser<Self>.DB()
-        func bundle(for language:Locale) -> Bundle {
-            let language = language.languageCode ?? language.identifier
-            guard let b = Bundle.main.path(forResource: language, ofType: "lproj") else {
-                return Bundle.main
-            }
-            return Bundle(path: b) ?? Bundle.main
-        }
-        for lang in languages {
-            db[lang] = [Self:[String]]()
-            let bundle = bundle(for: lang)
-            guard let path = bundle.path(forResource: fileName, ofType: "plist") else {
-                print("no path for \(lang) in \(bundle.bundlePath)")
-                continue
-            }
-            do {
-                guard let plistXML = FileManager.default.contents(atPath: path) else {
-                    continue
-                }
-                let data = try PropertyListSerialization.propertyList(from: plistXML, options: .mutableContainersAndLeaves, format: &propertyListFormat)
-                guard let abc = data as? [String:[String]] else {
-                    continue
-                }
-                var dict = NLParser<Self>.Entity()
-                Self.allCases.forEach { key in
-                    if let arr = abc[key.description] {
-                        dict[key] = arr
-                    }
-                }
-                db[lang] = dict
-            } catch {
-                print(error)
-                continue
-            }
-        }
-        return db
-    }
-}
 /// Natural lanugage string parser
-public class NLParser<Key: NLKeyDefinition> : ObservableObject {
+public class NLParser: ObservableObject {
+    public typealias Key = String
     /// A dictionary type describing the NLParser database (entities associated with a locale)
     public typealias DB = [Locale:Entity]
     
@@ -76,9 +29,9 @@ public class NLParser<Key: NLKeyDefinition> : ObservableObject {
         /// Searches the collection for keys
         /// - Parameter key: the key to search for
         /// - Returns: true if found, false if not
-        public func contains(_ key : Key) -> Bool {
+        public func contains(_ key : CustomStringConvertible) -> Bool {
             collection.contains { db in
-                db.keys.contains(key)
+                db.keys.contains(key.description)
             }
         }
     }
@@ -111,9 +64,9 @@ public class NLParser<Key: NLKeyDefinition> : ObservableObject {
     ///   - languages: The set of languages to populate the database with
     ///   - fileName: The name of plist file
     ///   - stringPublisher: Publisher used to trigger the parser to search and publish results
-    init(languages:[Locale], fileName: String, stringPublisher:AnyPublisher<String,Never>) {
-        db = Key.createLocalizedDatabasePlist(fileName:fileName, languages: languages)
-        self.locale = languages.first ?? .current
+    init(locale:Locale = .current, fileName: String, stringPublisher:AnyPublisher<String,Never>) {
+        db = Self.readLocalizedDatabasePlist(fileName:fileName)
+        self.locale = locale
         self.stringPublisher = stringPublisher
         updateContextualStrings()
     }
@@ -129,6 +82,12 @@ public class NLParser<Key: NLKeyDefinition> : ObservableObject {
             }
         })
         self.contextualStrings = str
+    }
+    /// Publishes results parsed from the `stringPublisher`
+    /// - Parameter keys: The keys to use for parsing
+    /// - Returns: A result publisher
+    func publisher<K:CustomStringConvertible>(using keys:[K]) -> ResultPublisher {
+        return publisher(using: keys.map({ $0.description }))
     }
     /// Publishes results parsed from the `stringPublisher`
     /// - Parameter keys: The keys to use for parsing
@@ -153,5 +112,39 @@ public class NLParser<Key: NLKeyDefinition> : ObservableObject {
             return Result(collection: set, string:string)
         }.eraseToAnyPublisher()
     }
-
+    /// Reads a local plist file and created a `Database`
+    /// - Returns: a generated database
+    static func readLocalizedDatabasePlist(fileName:String = "VoiceCommands") -> NLParser.DB {
+        var propertyListFormat = PropertyListSerialization.PropertyListFormat.xml
+        var db = NLParser.DB()
+        func bundle(for language:Locale) -> Bundle {
+            guard let b = Bundle.main.path(forResource: language.identifier, ofType: "lproj") else {
+                return Bundle.main
+            }
+            return Bundle(path: b) ?? Bundle.main
+        }
+        for identifier in Locale.availableIdentifiers {
+            let lang = Locale(identifier: identifier)
+            db[lang] = [String:[String]]()
+            let bundle = bundle(for: lang)
+            guard let path = bundle.path(forResource: fileName, ofType: "plist") else {
+                print("no path for \(lang) in \(bundle.bundlePath)")
+                continue
+            }
+            do {
+                guard let plistXML = FileManager.default.contents(atPath: path) else {
+                    continue
+                }
+                let data = try PropertyListSerialization.propertyList(from: plistXML, options: .mutableContainersAndLeaves, format: &propertyListFormat)
+                guard let pListData = data as? [String:[String]] else {
+                    continue
+                }
+                db[lang] = pListData
+            } catch {
+                print(error)
+                continue
+            }
+        }
+        return db
+    }
 }

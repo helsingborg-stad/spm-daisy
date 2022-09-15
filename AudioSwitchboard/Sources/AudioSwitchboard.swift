@@ -115,6 +115,9 @@ public class AudioSwitchboard :ObservableObject {
     /// Activates the AudioSession and returns the available audio services.
     /// - Returns: all available audio services
     private func activate() -> [AvailableService]{
+        if Bundle.main.infoDictionary?["NSMicrophoneUsageDescription"] == nil {
+            return [.play]
+        }
         do {
             try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .mixWithOthers,.duckOthers,.interruptSpokenAudioAndMixWithOthers,.allowBluetooth])
             try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
