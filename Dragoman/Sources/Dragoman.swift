@@ -4,6 +4,9 @@ import Combine
 import TextTranslator
 import Shout
 
+
+let dummyStringData = "\"_dragoman_dummy_content\" = \"Dragoman dummy content\";\n".data(using: .utf8)
+
 let defaultKeyMame = "DragomanCurrentBundleName"
 /// Queue item of texts to be translated.
 struct QueueItem {
@@ -111,7 +114,6 @@ public class Dragoman: ObservableObject {
             disabled = true
         }
         bundle = Self.bundleByLanguageCode(bundle: baseBundle, for: language) ?? baseBundle
-        
         self.translationService = translationService
         self.changed = changedSubject.eraseToAnyPublisher()
         self.updateTranslationServiceSubscriber()
@@ -166,7 +168,7 @@ public class Dragoman: ObservableObject {
             }
             let filePath = langPath.appendingPathComponent("\(tableName).strings")
             if manager.fileExists(atPath: filePath.path) == false {
-                manager.createFile(atPath: filePath.path, contents: nil, attributes: [FileAttributeKey.protectionKey: FileProtectionType.complete])
+                try dummyStringData?.write(to: filePath, options: Data.WritingOptions.completeFileProtection)
             }
         }
     }
@@ -194,14 +196,36 @@ public class Dragoman: ObservableObject {
         return nil
     }
     /// Remove all files from current bundle
-    public func clean() throws {
-        try clean(bundle:baseBundle)
+    /// - Parameter soft: only removes empty files if true
+    public func clean(soft:Bool = false) throws {
+        if soft {
+            try cleanEmptyFiles(bundle: baseBundle)
+        } else {
+            try clean(bundle:baseBundle)
+        }
     }
     /// Remove all files from bundle
     /// - Parameter bundle: the bundle to remove
     private func clean(bundle:Bundle) throws {
         if FileManager.default.fileExists(atPath: bundle.bundlePath) {
             try FileManager.default.removeItem(at: bundle.bundleURL)
+        }
+    }
+    private func cleanEmptyFiles(bundle:Bundle) throws {
+        let fm = FileManager.default
+        for lang in Dragoman.supportedLanguageKeys {
+            var filePath = bundle.bundleURL.appendingPathComponent("\(lang).lproj", isDirectory: true)
+            filePath = filePath.appendingPathComponent("\(tableName).strings")
+            if fm.fileExists(atPath: filePath.path) == true {
+                let attr = try fm.attributesOfItem(atPath: filePath.path)
+                guard let fileSize = attr[FileAttributeKey.size] as? Int else {
+                    continue
+                }
+                if fileSize == 0 {
+                    print("removing", filePath)
+                    try FileManager.default.removeItem(at: filePath)
+                }
+            }
         }
     }
     /// Removes all strings in all supported languages related to the specified keys

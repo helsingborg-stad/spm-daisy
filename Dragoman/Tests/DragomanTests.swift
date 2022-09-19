@@ -72,6 +72,26 @@ class TestTextTranslator : TextTranslationService {
 }
 let translator = TestTextTranslator()
 final class DragomanTests: XCTestCase {
+    func testSoftClean() {
+        let expectation = XCTestExpectation(description: "testDragoman")
+        let dragoman = Dragoman(translationService: translator, language: "sv")
+        try? dragoman.clean()
+        dragoman.translate([firstTest], from: "sv", to: ["en"]).sink { compl in
+            if case let .failure(error) = compl {
+                debugPrint(error)
+                XCTFail(error.localizedDescription)
+            }
+        } receiveValue: {
+            do {
+                try dragoman.clean(soft: true)
+            } catch {
+                XCTFail(error.localizedDescription)
+            }
+            XCTAssert(dragoman.string(forKey: firstTest, in: "en-US") == firstTestTranslated)
+            expectation.fulfill()
+        }.store(in: &cancellables)
+        wait(for: [expectation], timeout: 10)
+    }
     func testTranslate() {
         let expectation = XCTestExpectation(description: "testDragoman")
         let dragoman = Dragoman(translationService: translator, language: "sv")
