@@ -128,7 +128,7 @@ public class NLParser: ObservableObject {
             db[lang] = [String:[String]]()
             let bundle = bundle(for: lang)
             guard let path = bundle.path(forResource: fileName, ofType: "plist") else {
-                print("no path for \(lang) in \(bundle.bundlePath)")
+                debugPrint("no path for \(lang) in \(bundle.bundlePath)")
                 continue
             }
             do {
