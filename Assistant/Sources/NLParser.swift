@@ -123,12 +123,13 @@ public class NLParser: ObservableObject {
             }
             return Bundle(path: b) ?? Bundle.main
         }
+        var missing = [Locale]()
         for identifier in Locale.availableIdentifiers {
             let lang = Locale(identifier: identifier)
             db[lang] = [String:[String]]()
             let bundle = bundle(for: lang)
             guard let path = bundle.path(forResource: fileName, ofType: "plist") else {
-                debugPrint("no path for \(lang) in \(bundle.bundlePath)")
+                missing.append(lang)
                 continue
             }
             do {
@@ -144,6 +145,9 @@ public class NLParser: ObservableObject {
                 print(error)
                 continue
             }
+        }
+        if !missing.isEmpty {
+            debugPrint("missing voicecommand support for languages:",missing)
         }
         return db
     }
