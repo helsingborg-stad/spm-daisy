@@ -209,6 +209,7 @@ final class AssistantTests: XCTestCase {
         }
         wait(for: [expectation], timeout: 5)
     }
+    // Failing due to iOS 16 TTS changes (local language download)
     func testLocaleSupport() {
         let expectation = XCTestExpectation(description: "testDragoman")
         let sttService = TestSTT()
