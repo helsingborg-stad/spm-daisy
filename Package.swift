@@ -6,8 +6,7 @@ import PackageDescription
 let package = Package(
     name: "Daisy",
     defaultLocalization: "sv",
-    //platforms: [.macOS(.v10_15), .iOS(.v13), .tvOS(.v13)],
-    platforms: [.iOS(.v13), .tvOS(.v13)],
+    platforms: [.macOS(.v11), .iOS(.v13), .tvOS(.v13)],
     products: [
         .library(name: "AppSettings",               targets: ["AppSettings"]),
         .library(name: "Assistant",                 targets: ["Assistant"]),

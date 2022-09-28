@@ -142,7 +142,10 @@ public class AppleSTT: STTService, ObservableObject {
     }
     /// Indicates whether or not the use of Microphone and SFSpeechRecognizer has been accepted
     private var permissionsResolved:Bool {
-        AVAudioSession.sharedInstance().recordPermission == .granted && SFSpeechRecognizer.authorizationStatus() == .authorized
+        #if os(iOS) || os(tvOS) || os(watchOS)
+        return AVAudioSession.sharedInstance().recordPermission == .granted && SFSpeechRecognizer.authorizationStatus() == .authorized
+        #endif
+        return SFSpeechRecognizer.authorizationStatus() == .authorized
     }
     /// Restarts the service if available.
     private func restart() {
@@ -162,6 +165,7 @@ public class AppleSTT: STTService, ObservableObject {
         }
         /// Resolves all permissions to the microphone and SFSpeechRecognizer
         func resolveAccess() {
+            #if os(iOS) || os(tvOS) || os(watchOS)
             let audioSession = AVAudioSession.sharedInstance()
             if audioSession.recordPermission == .denied {
                 self.status = .idle
@@ -179,6 +183,7 @@ public class AppleSTT: STTService, ObservableObject {
                 }
                 return
             }
+            #endif
             if SFSpeechRecognizer.authorizationStatus() == .denied {
                 self.errorSubject.send(AppleSTTError.speechRecognizerPermissionsDenied)
                 return

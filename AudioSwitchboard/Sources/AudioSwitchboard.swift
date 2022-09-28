@@ -1,6 +1,8 @@
 import AVFoundation
 import Combine
+#if canImport(UIKit)
 import UIKit
+#endif
 
 /// Internal publisher
 typealias AudioSwitchboardSubject = PassthroughSubject<Void, Never>
@@ -43,13 +45,16 @@ public class AudioSwitchboard :ObservableObject {
     ///   - startAudioSessionImmediately: indicates whether or not to start the AVAudioSession immediately upon instantiation
     public init(audioEngine:AVAudioEngine = .init() ,startAudioSessionImmediately:Bool = true) {
         self.audioEngine = audioEngine
+#if os(iOS) || os(tvOS) || os(watchOS)
         NotificationCenter.default.publisher(for: AVAudioSession.interruptionNotification, object: nil).sink { [weak self] notif in
             self?.startAudioSession()
-            
         }.store(in: &cancellables)
+#endif
+#if canImport(UIKit)
         NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification, object: nil).sink { [weak self] notif in
             self?.startAudioSession()
         }.store(in: &cancellables)
+#endif
         if startAudioSessionImmediately {
             startAudioSession()
         }
@@ -118,9 +123,12 @@ public class AudioSwitchboard :ObservableObject {
         if Bundle.main.infoDictionary?["NSMicrophoneUsageDescription"] == nil {
             return [.play]
         }
+        #if os(iOS) || os(tvOS) || os(watchOS)
         do {
+        
             try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .default, options: [.defaultToSpeaker, .mixWithOthers,.duckOthers,.interruptSpokenAudioAndMixWithOthers,.allowBluetooth])
             try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
+            
             return AvailableService.allCases
         } catch {
             do {
@@ -131,5 +139,7 @@ public class AudioSwitchboard :ObservableObject {
                 return []
             }
         }
+        #endif
+        return AvailableService.allCases
     }
 }

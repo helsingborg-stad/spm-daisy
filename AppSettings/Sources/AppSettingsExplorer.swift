@@ -89,8 +89,10 @@ extension AppSettings {
                 }
             }
             .overlay(overlay)
+            #if os(iOS) || os(tvOS) || os(watchOS)
             .listStyle(GroupedListStyle())
             .navigationBarTitle(LocalizedStringKey("App Config"))
+            #endif
         }
     }
     /// Explorer view that represents the AppSettings instance configuration

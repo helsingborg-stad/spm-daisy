@@ -104,9 +104,11 @@ public class AppleTTS: NSObject, TTSService, AVSpeechSynthesizerDelegate, Observ
         audioPlayer = AudioBufferPlayer(audioSwitchBoard)
         synthesizer = AVSpeechSynthesizer()
         
+        #if os(iOS) || os(tvOS) || os(watchOS)
         if #available(iOS 14.0, *) {
             synthesizer.usesApplicationAudioSession = true
         }
+        #endif
         super.init()
         synthesizer.delegate = self
         self.fft = fft
