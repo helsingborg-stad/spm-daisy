@@ -144,4 +144,17 @@ final class TTSTests: XCTestCase {
         }.store(in: &cancellables)
         wait(for: [expectation], timeout: 2)
     }
+    /// doenst work on iOS 16
+//    func testVoiceSupport() {
+//        let expectation = XCTestExpectation(description: "testVoiceSupport")
+//        let tts = TTS(AppleTTS(audioSwitchBoard: switchBoard))
+//        tts.availableLocalesPublisher.sink { locales in
+//            for g in TTSGender.allCases {
+//                XCTAssert(tts.hasSupport(for: TTSVoice(gender: g, locale: Locale(identifier: "sv_SE"))))
+//            }
+//            expectation.fulfill()
+//        }.store(in: &cancellables)
+//        wait(for: [expectation], timeout: 2)
+//
+//    }
 }
