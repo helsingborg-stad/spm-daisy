@@ -316,7 +316,12 @@ public class TTS: ObservableObject {
     private func bestAvailableService(for voice:TTSVoice) -> TTSService? {
         services.first(where: { $0.hasSupportFor(locale: voice.locale, gender: voice.gender) })
     }
-    
+    /// Determines whether or not any service has support for a given gender and locale
+    /// - Parameter voice: used to check locale and gender
+    /// - Returns: true if supported, false if not
+    public func hasSupport(for voice:TTSVoice) -> Bool {
+        return services.contains(where: { $0.hasSupportFor(locale: voice.locale, gender: voice.gender) })
+    }
     /// Dequeue an utterance, ie removed it from the queue
     /// - Parameter utterance: the utterance to remove
     private func dequeue(_ utterance: TTSUtterance) {
