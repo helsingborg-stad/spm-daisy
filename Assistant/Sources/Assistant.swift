@@ -18,27 +18,9 @@ public enum AssistantError: Error {
     /// If missing valid to-language during translation
     case emptyTranslationLanguage
 }
-public protocol DaisyAssistant : ObservableObject {
-    var languageUpdatesAvailablePublisher: AnyPublisher<Void,Never> { get }
-    var isSpeakingPublisher:AnyPublisher<Bool,Never> { get }
-    var locale:Locale { get }
-    var currentlySpeakingPublisher:AnyPublisher<TTSUtterance?,Never> { get }
-    var translationBundlePublisher:AnyPublisher<Bundle,Never> { get }
-    func string(forKey key:String, in locale:Locale?, value:String?) -> String
-    func utterance(for key:String, in locale:Locale?, value:String?, tag:String?) -> TTSUtterance
-    func speak(_ values:(String,String?)..., interrupt:Bool) -> [TTSUtterance]
-    func speak(_ strings:String..., interrupt:Bool) -> [TTSUtterance]
-    func speak(_ values:[(String,String?)], interrupt:Bool) -> [TTSUtterance]
-    func speak(_ strings:[String], interrupt:Bool) -> [TTSUtterance]
-    func speak(_ utterances:TTSUtterance..., interrupt:Bool)
-    func speak(_ utterances:[TTSUtterance], interrupt:Bool)
-    func cancelSpeechServices()
-    func translate(_ strings:String..., from:LanguageKey?, to:[LanguageKey]?) -> AnyPublisher<Void, Error>
-    func translate(_ strings:[String], from:LanguageKey?, to:[LanguageKey]?) -> AnyPublisher<Void, Error>
-    func getAvailableLangaugeCodes(includeTTSService:Bool, includeSTTService:Bool, includeTextTranslation:Bool) -> Set<String>?
-}
+
 /// A package that manages voice commands and translations, and, makes sure that TTS and STT is not interfering with eachother
-public class Assistant: ObservableObject,DaisyAssistant {
+public class Assistant: ObservableObject {
     /// Used to clairify the order of `.speak((uttearance,tag))` method
     public typealias UtteranceString = String
     /// Used to clairify the order of `.speak((uttearance,tag))` method
@@ -353,8 +335,8 @@ public class Assistant: ObservableObject,DaisyAssistant {
     ///   - values: touple representing a string and a tag
     ///   - interrupt: indicates whether or not to interrupt or queue the utterances
     /// - Returns: a set of utterances representing the provided values
-    @discardableResult public func speak(_ values:(UtteranceString,UtteranceTag?)..., interrupt:Bool = true) -> [TTSUtterance] {
-        return speak(values,interrupt: interrupt)
+    @discardableResult public func speak(_ values:(UtteranceString,UtteranceTag?)..., interrupt:Bool = true, readEmojis:Bool = false) -> [TTSUtterance] {
+        return speak(values, interrupt: interrupt, readEmojis: readEmojis)
     }
     /// Adds a set of strings (and tags) to be uttered by the TTS
     /// assistant.speak(("Hello User", "mytag"),("How are you?",nil), interrupt:true)
@@ -362,10 +344,10 @@ public class Assistant: ObservableObject,DaisyAssistant {
     ///   - values: touple representing a string and a tag
     ///   - interrupt: indicates whether or not to interrupt or queue the utterances
     /// - Returns: a set of utterances representing the provided values
-    @discardableResult public func speak(_ values:[(UtteranceString,UtteranceTag?)], interrupt:Bool = true) -> [TTSUtterance] {
+    @discardableResult public func speak(_ values:[(UtteranceString,UtteranceTag?)], interrupt:Bool = true, readEmojis:Bool = false) -> [TTSUtterance] {
         var arr = [TTSUtterance]()
         for value in values {
-            arr.append(self.utterance(for: value.0.withoutEmojis, tag: value.1))
+            arr.append(self.utterance(for: readEmojis ? value.0 : value.0.withoutEmojis, tag: value.1))
         }
         if interrupt {
             self.interrupt(using: arr)
@@ -380,8 +362,8 @@ public class Assistant: ObservableObject,DaisyAssistant {
     ///   - values: string to use for the utterance, using the current locale set in assistant
     ///   - interrupt: indicates whether or not to interrupt or queue the utterances
     /// - Returns: a set of utterances representing the provided values
-    @discardableResult public func speak(_ strings:String..., interrupt:Bool = true) -> [TTSUtterance] {
-        return speak(strings,interrupt: interrupt)
+    @discardableResult public func speak(_ strings:String..., interrupt:Bool = true, readEmojis:Bool = false) -> [TTSUtterance] {
+        return speak(strings, interrupt: interrupt, readEmojis: readEmojis)
     }
     /// Adds a set of strings to be uttered by the TTS
     /// assistant.speak("Hello User","How are you?", interrupt:true)
@@ -389,10 +371,10 @@ public class Assistant: ObservableObject,DaisyAssistant {
     ///   - values: string to use for the utterance, using the current locale set in assistant
     ///   - interrupt: indicates whether or not to interrupt or queue the utterances
     /// - Returns: a set of utterances representing the provided values
-    @discardableResult public func speak(_ strings:[String], interrupt:Bool = true) -> [TTSUtterance] {
+    @discardableResult public func speak(_ strings:[String], interrupt:Bool = true, readEmojis:Bool = false) -> [TTSUtterance] {
         var arr = [TTSUtterance]()
         for string in strings {
-            arr.append(self.utterance(for: string.withoutEmojis)) // Strip emojis
+            arr.append(self.utterance(for: readEmojis ? string : string.withoutEmojis))
         }
         self.speak(arr,interrupt: interrupt)
         return arr
