@@ -335,8 +335,8 @@ public class Assistant: ObservableObject {
     ///   - values: touple representing a string and a tag
     ///   - interrupt: indicates whether or not to interrupt or queue the utterances
     /// - Returns: a set of utterances representing the provided values
-    @discardableResult public func speak(_ values:(UtteranceString,UtteranceTag?)..., interrupt:Bool = true) -> [TTSUtterance] {
-        return speak(values,interrupt: interrupt)
+    @discardableResult public func speak(_ values:(UtteranceString,UtteranceTag?)..., interrupt:Bool = true, readEmojis:Bool = false) -> [TTSUtterance] {
+        return speak(values, interrupt: interrupt, readEmojis: readEmojis)
     }
     /// Adds a set of strings (and tags) to be uttered by the TTS
     /// assistant.speak(("Hello User", "mytag"),("How are you?",nil), interrupt:true)
@@ -344,10 +344,10 @@ public class Assistant: ObservableObject {
     ///   - values: touple representing a string and a tag
     ///   - interrupt: indicates whether or not to interrupt or queue the utterances
     /// - Returns: a set of utterances representing the provided values
-    @discardableResult public func speak(_ values:[(UtteranceString,UtteranceTag?)], interrupt:Bool = true) -> [TTSUtterance] {
+    @discardableResult public func speak(_ values:[(UtteranceString,UtteranceTag?)], interrupt:Bool = true, readEmojis:Bool = false) -> [TTSUtterance] {
         var arr = [TTSUtterance]()
         for value in values {
-            arr.append(self.utterance(for: value.0, tag: value.1))
+            arr.append(self.utterance(for: readEmojis ? value.0 : value.0.withoutEmojis, tag: value.1))
         }
         if interrupt {
             self.interrupt(using: arr)
@@ -362,8 +362,8 @@ public class Assistant: ObservableObject {
     ///   - values: string to use for the utterance, using the current locale set in assistant
     ///   - interrupt: indicates whether or not to interrupt or queue the utterances
     /// - Returns: a set of utterances representing the provided values
-    @discardableResult public func speak(_ strings:String..., interrupt:Bool = true) -> [TTSUtterance] {
-        return speak(strings,interrupt: interrupt)
+    @discardableResult public func speak(_ strings:String..., interrupt:Bool = true, readEmojis:Bool = false) -> [TTSUtterance] {
+        return speak(strings, interrupt: interrupt, readEmojis: readEmojis)
     }
     /// Adds a set of strings to be uttered by the TTS
     /// assistant.speak("Hello User","How are you?", interrupt:true)
@@ -371,10 +371,10 @@ public class Assistant: ObservableObject {
     ///   - values: string to use for the utterance, using the current locale set in assistant
     ///   - interrupt: indicates whether or not to interrupt or queue the utterances
     /// - Returns: a set of utterances representing the provided values
-    @discardableResult public func speak(_ strings:[String], interrupt:Bool = true) -> [TTSUtterance] {
+    @discardableResult public func speak(_ strings:[String], interrupt:Bool = true, readEmojis:Bool = false) -> [TTSUtterance] {
         var arr = [TTSUtterance]()
         for string in strings {
-            arr.append(self.utterance(for: string))
+            arr.append(self.utterance(for: readEmojis ? string : string.withoutEmojis))
         }
         self.speak(arr,interrupt: interrupt)
         return arr
@@ -571,4 +571,10 @@ public class Assistant: ObservableObject {
         }
     }
 
+}
+
+public extension String {
+    var withoutEmojis: String {
+        return self.filter { !($0.unicodeScalars.first?.properties.isEmoji ?? false && $0.unicodeScalars.first?.properties.isEmojiPresentation ?? false) }
+    }
 }
