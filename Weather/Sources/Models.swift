@@ -196,7 +196,7 @@ public struct WeatherData : Equatable,Identifiable {
     ///   - windSpeed: Wind speed in m/s
     ///   - windGustSpeed: Wind gust speed in m/s
     ///   - relativeHumidity: Relative air humudity in % (0-100)
-    ///   - thunderProbability: The probabiity of thunder in % (0-100=
+    ///   - thunderProbability: The probabiity of thunder in % (0-100)
     ///   - totalCloudCover: Mean value of total cloud cover
     ///   - lowLevelCloudCover: Mean value of low cloud cover
     ///   - mediumLevelCloudCover: Mean value of medium cloud cover

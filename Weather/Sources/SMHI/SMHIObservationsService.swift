@@ -452,7 +452,9 @@ public struct SMHIObservations {
             if processing == .station {
                 let stationData = row.split(separator: ";")
                 debugPrint(stationData)
-                guard stationData.count >= 3, let height = Double(stationData[2]) else { throw SMHIObservationsErrors.invalidStationDataInCSV }
+                guard stationData.count >= 3, let height = Double(stationData[3]) else {
+                    throw SMHIObservationsErrors.invalidStationDataInCSV
+                }
                 station = Value.ValueStation(key: String(stationData[1]), name: String(stationData[0]), owner: "", ownerCategory: "", height: height)
             } else if processing == .parameter {
                 let parameterData = row.split(separator: ";")
