@@ -9,6 +9,7 @@ let package = Package(
     //platforms: [.macOS(.v10_15), .iOS(.v13), .tvOS(.v13)],
     platforms: [.iOS(.v13), .tvOS(.v13)],
     products: [
+        .library(name: "Analytics",                 targets: ["Analytics"]),
         .library(name: "AppSettings",               targets: ["AppSettings"]),
         .library(name: "Assistant",                 targets: ["Assistant"]),
         .library(name: "AudioSwitchboard",          targets: ["AudioSwitchboard"]),
@@ -29,6 +30,7 @@ let package = Package(
         .package(url: "https://github.com/kishikawakatsumi/KeychainAccess", from: "4.2.2")
     ],
     targets: [
+        .target(name: "Analytics",                  dependencies: [],                                           path:"Analytics/Sources"),
         .target(name: "AppSettings",                dependencies: [],                                           path:"AppSettings/Sources"),
         .target(name: "Assistant",                  dependencies: ["Dragoman", "TTS", "STT", "TextTranslator"], path:"Assistant/Sources"),
         .target(name: "AudioSwitchboard",           dependencies: [],                                           path:"AudioSwitchboard/Sources"),
@@ -43,6 +45,7 @@ let package = Package(
         .target(name: "STT",                        dependencies: ["AudioSwitchboard", "FFTPublisher"],         path:"STT/Sources"),
         .target(name: "TextTranslator",             dependencies: [],                                           path:"TextTranslator/Sources"),
         .target(name: "Weather",                    dependencies: ["AutomatedFetcher"],                         path:"Weather/Sources"),
+        .testTarget(name: "AnalyticsTests",         dependencies: ["Analytics"],                                path:"Analytics/Tests"),
         .testTarget(name: "AppSettingsTests",       dependencies: ["AppSettings"],                              path:"AppSettings/Tests"),
         .testTarget(name: "AssistantTests",         dependencies: ["Assistant"],                                path:"Assistant/Tests"),
         .testTarget(name: "AudioSwitchboardTests",  dependencies: ["AudioSwitchboard"],                         path:"AudioSwitchboard/Tests"),
