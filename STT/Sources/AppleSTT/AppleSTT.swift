@@ -5,6 +5,7 @@ import Intents
 import Combine
 import FFTPublisher
 import AudioSwitchboard
+import Analytics
 
 func createLocaleSet() -> Set<Locale> {
     var set = Set<Locale>()
@@ -156,6 +157,7 @@ public class AppleSTT: STTService, ObservableObject {
             do {
                 try self.startRecording()
             } catch {
+                AnalyticsService.shared.logError(error)
                 self.status = .idle
                 self.errorSubject.send(AppleSTTError.microphonePermissionsDenied)
             }

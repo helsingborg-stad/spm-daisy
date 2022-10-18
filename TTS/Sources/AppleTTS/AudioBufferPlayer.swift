@@ -3,6 +3,7 @@ import AVKit
 import Combine
 import FFTPublisher
 import AudioSwitchboard
+import Analytics
 
 enum AudioPlayerStatus {
     case started
@@ -111,6 +112,7 @@ class AudioBufferPlayer: ObservableObject {
                 try self.converter.convert(to: convertedBuffer, from: pcmBuffer)
                 play(buffer: convertedBuffer, id: id)
             } catch {
+                AnalyticsService.shared.logError(error)
                 self.statusSubject.send(AudioPlayerItem(id: id, status: .failed, error: error))
             }
         }

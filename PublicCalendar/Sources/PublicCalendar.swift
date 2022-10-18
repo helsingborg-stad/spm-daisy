@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import SwiftSoup
 import AutomatedFetcher
+import Analytics
 
 /// Extension of the [Category:[Event]] dictionary
 public extension Dictionary where Key == PublicCalendar.Category, Value == [PublicCalendar.Event] {
@@ -50,6 +51,7 @@ public extension Dictionary where Key == PublicCalendar.Category, Value == [Publ
             let data = try enc.encode(self)
             try data.write(to: Self.fileUrl(with: filename))
         } catch {
+            AnalyticsService.shared.logError(error)
             debugPrint(error)
         }
     }
@@ -62,6 +64,7 @@ public extension Dictionary where Key == PublicCalendar.Category, Value == [Publ
             let res = try JSONDecoder().decode(Self.self, from: data)
             return res.isEmpty ? nil : res
         } catch {
+            AnalyticsService.shared.logError(error)
             debugPrint(error)
         }
         return nil
@@ -72,6 +75,7 @@ public extension Dictionary where Key == PublicCalendar.Category, Value == [Publ
         do {
             try FileManager.default.removeItem(at: Self.fileUrl(with: filename))
         } catch {
+            AnalyticsService.shared.logError(error)
             debugPrint(error)
         }
     }
@@ -310,6 +314,7 @@ public class PublicCalendar : ObservableObject {
                     do {
                         res[c] = try crawlContent(for: c,year:y)
                     } catch {
+                        AnalyticsService.shared.logError(error)
                         debugPrint(error)
                     }
                 }

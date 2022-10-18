@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import AutomatedFetcher
+import Analytics
 
 
 /// Used for fetching information from services providing some kind of daily meal menu
@@ -222,7 +223,7 @@ public class Meals : ObservableObject {
         fetching = true
         p = service.fetchMealsPublisher().sink { [weak self] completion in
             switch completion {
-            case .failure(let error): debugPrint(error)
+            case .failure(let error): AnalyticsService.shared.logError(error); debugPrint(error)
             case .finished: break
             }
             self?.fetching = false
