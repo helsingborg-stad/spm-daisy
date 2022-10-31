@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import Analytics
 
 
 /// UserDefaults extension for managed config
@@ -55,6 +56,7 @@ extension AppSettingsConfig {
         do {
             return try decoded(from: data)
         } catch {
+            AnalyticsService.shared.logError(error)
             debugPrint(error)
         }
         return nil
@@ -71,6 +73,7 @@ extension AppSettingsConfig {
         do {
             return try decoded(from: data)
         } catch {
+            AnalyticsService.shared.logError(error)
             debugPrint(error)
         }
         return nil

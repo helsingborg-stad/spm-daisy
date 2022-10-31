@@ -8,6 +8,7 @@
 import Foundation
 import STT
 import Combine
+import Analytics
 
 /// Natural lanugage string parser
 public class NLParser: ObservableObject {
@@ -142,6 +143,7 @@ public class NLParser: ObservableObject {
                 }
                 db[lang] = pListData
             } catch {
+                AnalyticsService.shared.logError(error)
                 print(error)
                 continue
             }

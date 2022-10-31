@@ -1,6 +1,7 @@
 import AVFoundation
 import Combine
 import UIKit
+import Analytics
 
 /// Internal publisher
 typealias AudioSwitchboardSubject = PassthroughSubject<Void, Never>
@@ -128,6 +129,7 @@ public class AudioSwitchboard :ObservableObject {
                 try AVAudioSession.sharedInstance().setActive(true, options: .notifyOthersOnDeactivation)
                 return [AvailableService.play]
             } catch {
+                AnalyticsService.shared.logError(error)
                 return []
             }
         }
