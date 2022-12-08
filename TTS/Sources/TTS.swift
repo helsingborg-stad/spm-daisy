@@ -177,6 +177,12 @@ public protocol TTSService : AnyObject {
     /// Currently available service locales
     /// The locales must be formatted as `language_REGION` or just `language` (don't use hyphens)
     var availableLocales:Set<Locale>? { get }
+    /// Clears the TTS services cache files.  Only impleemted if  TTS service is caching files
+    func clearCache()
+}
+extension TTSService {
+    //To make clearCache() optional:
+    public func clearCache() {}
 }
 /// Object describing an utterance to be played.
 public struct TTSUtterance: Identifiable, Equatable {
@@ -531,6 +537,10 @@ public class TTS: ObservableObject {
         currentService?.continue()
         speakingSubject.send(u)
         u.updateStatus(.speaking)
+    }
+    /// Clears the TTS servces cache folder if TTS service using cache
+    public func clearCache() {
+        services.forEach { $0.clearCache() }
     }
     /// Updates the currently available locales using a set ot locales
     private func updateAvailableLocales(_ locales:Set<Locale>?) {
