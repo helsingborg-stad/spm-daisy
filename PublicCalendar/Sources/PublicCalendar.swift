@@ -284,6 +284,7 @@ public class PublicCalendar : ObservableObject {
             var arr = [Event]()
             let formatter = DateFormatter()
             formatter.dateFormat = "yyyy-MM-dd"
+            formatter.timeZone = TimeZone(abbreviation: "UTC")
             let holidays = try Data(contentsOf: category.url.appendingPathComponent("\(year)"))
             guard let holidayHTML = String(data: holidays, encoding: .utf8) else {
                 debugPrint("cannot decode string for \(category.url.absoluteString)")
