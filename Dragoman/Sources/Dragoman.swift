@@ -400,7 +400,7 @@ public class Dragoman: ObservableObject {
         let old = baseBundle
         let new = try Self.createBundle(tableName: tableName, languages: Dragoman.supportedLanguageKeys)
         for language in translations.db {
-            let lang = language.key
+            let lang = language.key.replacingOccurrences(of: "-", with: "_")
             let langPath = new.bundleURL.appendingPathComponent("\(lang).lproj", isDirectory: true)
             let sentences = language.value
             let res = sentences.reduce("", { $0 + "\"\(escape($1.key))\" = \"\(escape($1.value))\";\n" })
